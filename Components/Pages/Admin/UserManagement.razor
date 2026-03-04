@@ -167,7 +167,7 @@
                                    to prevent locking yourself out *@
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user)"
                                         disabled="@(user.Email ==
-                                                                                                                                                                                                                                                                                                                                      "admin@puppetfest.local")">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      "admin@puppetfest.local")">
                                     Delete
                                 </button>
                             </td>
@@ -187,7 +187,7 @@
     private List<UserViewModel> users = new();
     private string newUserEmail = "";
     private string newUserPassword = "";
-    private string newUserRole = AppRoles.Customer;
+    private string newUserRole = AppRoles.SalesStaff; // default selection for the "Role" dropdown in the "Create New User"
     private string statusMessage = "";
     private string statusCssClass = "";
 
@@ -231,7 +231,7 @@
                 Email = user.Email ?? "",
                 Roles = roles.ToList(),
                 EmailConfirmed = user.EmailConfirmed,
-                SelectedNewRole = AppRoles.Customer
+                SelectedNewRole = AppRoles.SalesStaff //default selection for the "Add Role" dropdown in the "All users" table
             });
         }
     }
@@ -362,6 +362,6 @@
         public string Email { get; set; } = "";
         public List<string> Roles { get; set; } = new();
         public bool EmailConfirmed { get; set; }
-        public string SelectedNewRole { get; set; } = AppRoles.Customer;
+        public string SelectedNewRole { get; set; } = AppRoles.SalesStaff;
     }
 }
