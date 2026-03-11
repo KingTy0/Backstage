@@ -4,9 +4,9 @@
   "settings": {
     "width": 2000,
     "height": 2000,
-    "scrollTop": -293.6932,
-    "scrollLeft": -263.1209,
-    "zoomLevel": 0.73,
+    "scrollTop": -244.3727,
+    "scrollLeft": -451.426,
+    "zoomLevel": 0.85,
     "show": 431,
     "database": 4,
     "databaseName": "",
@@ -220,7 +220,7 @@
       },
       "HO9KA7iO_Fof822MwvzW0": {
         "id": "HO9KA7iO_Fof822MwvzW0",
-        "name": "Location",
+        "name": "Locations",
         "comment": "",
         "columnIds": [
           "q0WEU71dZDQkMbqt69nAV",
@@ -243,7 +243,7 @@
           "color": ""
         },
         "meta": {
-          "updateAt": 1773253652368,
+          "updateAt": 1773257833455,
           "createAt": 1773212314716
         }
       },
