@@ -11,8 +11,8 @@ using PuppetFestAPP.Web.Data;
 namespace PuppetFestAPP.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260310041557_AddProductAndCategory")]
-    partial class AddProductAndCategory
+    [Migration("20260329004658_AddInventoryTable")]
+    partial class AddInventoryTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -220,12 +220,59 @@ namespace PuppetFestAPP.Web.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Data.Inventory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("Inventories");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Data.Location", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Locations");
                 });
 
             modelBuilder.Entity("PuppetFestAPP.Web.Data.Product", b =>
@@ -237,36 +284,100 @@ namespace PuppetFestAPP.Web.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<int?>("Color")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DateAdded")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ImageUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
+                    b.Property<int?>("ImageId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Material")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("ParentProductId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<decimal>("Price")
+                        .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");
 
-                    b.Property<int>("StockQuantity")
+                    b.Property<int?>("Size")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("ImageId");
+
+                    b.HasIndex("ParentProductId");
+
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Data.ProductLocation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductLocations");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Models.Image", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AltText")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UploadDate")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Images");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -320,15 +431,81 @@ namespace PuppetFestAPP.Web.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PuppetFestAPP.Web.Data.Inventory", b =>
+                {
+                    b.HasOne("PuppetFestAPP.Web.Data.Product", "Product")
+                        .WithMany("Inventories")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("PuppetFestAPP.Web.Data.Product", b =>
                 {
                     b.HasOne("PuppetFestAPP.Web.Data.Category", "Category")
-                        .WithMany()
+                        .WithMany("Products")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("PuppetFestAPP.Web.Models.Image", "Image")
+                        .WithMany("Products")
+                        .HasForeignKey("ImageId");
+
+                    b.HasOne("PuppetFestAPP.Web.Data.Product", "ParentProduct")
+                        .WithMany("Variants")
+                        .HasForeignKey("ParentProductId");
+
                     b.Navigation("Category");
+
+                    b.Navigation("Image");
+
+                    b.Navigation("ParentProduct");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Data.ProductLocation", b =>
+                {
+                    b.HasOne("PuppetFestAPP.Web.Data.Location", "Location")
+                        .WithMany("ProductLocations")
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PuppetFestAPP.Web.Data.Product", "Product")
+                        .WithMany("ProductLocations")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Location");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Data.Category", b =>
+                {
+                    b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Data.Location", b =>
+                {
+                    b.Navigation("ProductLocations");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Data.Product", b =>
+                {
+                    b.Navigation("Inventories");
+
+                    b.Navigation("ProductLocations");
+
+                    b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("PuppetFestAPP.Web.Models.Image", b =>
+                {
+                    b.Navigation("Products");
                 });
 #pragma warning restore 612, 618
         }
