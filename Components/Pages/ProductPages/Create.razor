@@ -42,26 +42,28 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Size (Optional)</label>
-                <select @bind="Form.Size" class="form-control">
-                    @foreach (var size in Enum.GetValues<ProductSize>())
-                    {
-                        <option value="@size">@size</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Color (Optional)</label>
-                <select @bind="Form.Color" class="form-control">
-                    @foreach (var color in Enum.GetValues<ProductColor>())
-                    {
-                        <option value="@color">@color</option>
-                    }
-                </select>
-            </div>
-        </div>
+       <div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Size (Optional)</label>
+        @* Change from <select @bind> to <InputSelect @bind-Value> *@
+        <InputSelect @bind-Value="Form.Size" class="form-control">
+            @foreach (var size in Enum.GetValues<ProductSize>())
+            {
+                <option value="@size">@size</option>
+            }
+        </InputSelect>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Color (Optional)</label>
+        @* Change from <select @bind> to <InputSelect @bind-Value> *@
+        <InputSelect @bind-Value="Form.Color" class="form-control">
+            @foreach (var color in Enum.GetValues<ProductColor>())
+            {
+                <option value="@color">@color</option>
+            }
+        </InputSelect>
+    </div>
+</div>
 
         <div class="mb-3">
             <label class="form-label">Product Image</label>

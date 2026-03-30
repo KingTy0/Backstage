@@ -17,7 +17,8 @@
     {
         <p><em>Loading...</em></p>
     }
-    else {
+    else
+    {
         <dl class="row">
             <dt class="col-sm-2">ParentProductId</dt>
             <dd class="col-sm-10">@product.ParentProductId</dd>
@@ -72,7 +73,7 @@
 @code {
     private Product? product;
 
-   [Parameter] // <--- CHANGE THIS
+    [Parameter] // <--- CHANGE THIS
     public int Id { get; set; }
     protected override async Task OnInitializedAsync()
     {
@@ -85,32 +86,41 @@
         }
     }
 
-   private async Task DeleteProduct()
-{
-    if (product is null) return;
+    private async Task DeleteProduct()
+    {
+        if (product is null) return;
 
-    using var context = DbFactory.CreateDbContext();
+        using var context = DbFactory.CreateDbContext();
 
-    // 1. Fetch the product again with its 'Inventories' included
-    // This ensures we see the hidden links that block deletion
-    var productToDelete = await context.Products
-        .Include(p => p.Inventories) 
+        // 1. Capture the Parent ID before the product is gone
+        var parentId = product.ParentProductId;
+
+        // 2. Find it with inventory so it doesn't crash on foreign keys
+        var productToDelete = await context.Products
+        .Include(p => p.Inventories)
         .FirstOrDefaultAsync(p => p.Id == Id);
 
-    if (productToDelete != null)
-    {
-        // 2. Clear out the inventory records for this variant first
-        if (productToDelete.Inventories != null && productToDelete.Inventories.Any())
+        if (productToDelete != null)
         {
-            context.Inventories.RemoveRange(productToDelete.Inventories);
+            if (productToDelete.Inventories != null && productToDelete.Inventories.Any())
+            {
+                context.Inventories.RemoveRange(productToDelete.Inventories);
+            }
+
+            context.Products.Remove(productToDelete);
+            await context.SaveChangesAsync();
         }
 
-        // 3. Now the variant is "unlocked" and can be deleted
-        context.Products.Remove(productToDelete);
-        
-        await context.SaveChangesAsync();
+        // 3. Smart Redirect
+        if (parentId.HasValue)
+        {
+            // Go back to the Master Product details
+            NavigationManager.NavigateTo($"/products/details/{parentId.Value}");
+        }
+        else
+        {
+            // Go back to the main list
+            NavigationManager.NavigateTo("/products");
+        }
     }
-
-    NavigationManager.NavigateTo("/products");
-}
 }

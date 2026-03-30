@@ -37,12 +37,13 @@
                     </dd>
                 </dl>
             </div>
-            
+
             @* Master Product Image Display *@
             <div class="col-md-4 text-center">
                 @if (!string.IsNullOrEmpty(Product.Image?.FileName))
                 {
-                    <img src="/images/products/@Product.Image.FileName" class="img-fluid rounded shadow" style="max-height: 250px;" />
+                    <img src="/images/products/@Product.Image.FileName" class="img-fluid rounded shadow"
+                style="max-height: 250px;" />
                 }
                 else
                 {
@@ -65,7 +66,7 @@
                         <th>Size</th>
                         <th>Color</th>
                         <th>Price</th>
-                        <th>Actions</th>
+                        <th class="text-center">Actions</th> @* Only one Header *@
                     </tr>
                 </thead>
                 <tbody>
@@ -75,8 +76,16 @@
                             <td>@(v.Size == ProductSize.NA || v.Size == null ? "—" : v.Size.ToString())</td>
                             <td>@(v.Color == ProductColor.NA || v.Color == null ? "—" : v.Color.ToString())</td>
                             <td>@v.Price.ToString("C")</td>
-                            <td>
-                                <a href="@($"/products/edit/{v.Id}")" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <td class="text-center">
+                                @* Both buttons live inside this single <td> *@
+                                <div class="btn-group" role="group">
+                                    <a href="@($"/products/edit/{v.Id}")" class="btn btn-sm btn-outline-primary">
+                                        Edit
+                                    </a>
+                                    <a href="@($"/products/delete/{v.Id}")" class="btn btn-sm btn-outline-danger">
+                                        Delete
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -106,16 +115,16 @@
 
         // Added .Include(p => p.Image)
         Product = await context.Products
-            .Include(p => p.Category)
-            .Include(p => p.Image) 
-            .FirstOrDefaultAsync(m => m.Id == Id);
+        .Include(p => p.Category)
+        .Include(p => p.Image)
+        .FirstOrDefaultAsync(m => m.Id == Id);
 
         if (Product is not null)
         {
             Variants = await context.Products
-                .Where(p => p.ParentProductId == Id)
-                .OrderBy(p => p.Size)
-                .ToListAsync();
+            .Where(p => p.ParentProductId == Id)
+            .OrderBy(p => p.Size)
+            .ToListAsync();
         }
     }
 }
