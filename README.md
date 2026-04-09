@@ -7,6 +7,7 @@ this is an inventory management web app for the chicago international theatre pu
   * EF Core Setup
 * Luis (he/him)
 * * Branch Management
+  * CRUD + Images
 * Tyrone (he/him)
 * * CRUD + Import Seed Data
   * Launch to Azure
