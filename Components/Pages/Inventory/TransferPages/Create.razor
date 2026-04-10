@@ -1,0 +1,224 @@
+@page "/inventory/transfer/create"
+@using Microsoft.EntityFrameworkCore
+@using PuppetFestAPP.Web.Data
+@rendermode InteractiveServer
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Create Transfer Box</PageTitle>
+
+<div class="container mt-4">
+    <h1>Create Transfer Box</h1>
+    
+    <EditForm Model="Form" OnValidSubmit="CreateTransfer" FormName="transferBox" Enhance>
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">From Location</label>
+                <InputSelect @bind-Value="Form.FromLocationId" class="form-control">
+                    <option value="0">Select Source...</option>
+                    @foreach (var loc in Locations.Where(l => l.IsActive))
+                    {
+                        <option value="@loc.Id">@loc.Name (@loc.Type)</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">To Location</label>
+                <InputSelect @bind-Value="Form.ToLocationId" class="form-control">
+                    <option value="0">Select Destination...</option>
+                    @foreach (var loc in Locations.Where(l => l.IsActive))
+                    {
+                        <option value="@loc.Id">@loc.Name (@loc.Type)</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Notes (optional)</label>
+            <InputTextArea @bind-Value="Form.Notes" class="form-control" rows="2" />
+        </div>
+
+        @if (Form.Items.Any())
+        {
+            <h4>Box Items</h4>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Form.Items)
+                    {
+                        <tr>
+                            <td>@GetProductName(item.ProductId)</td>
+                            <td>@item.Quantity</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="() => Form.Items.Remove(item)">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Add Product</label>
+                <InputSelect @bind-Value="selectedProductId" class="form-control">
+                    <option value="0">Select Product...</option>
+                    @foreach (var prod in Products.Where(p => p.IsActive))
+                    {
+                        <option value="@prod.Id">@prod.Name @(prod.Size != ProductSize.NA ? $"({prod.Size})" : "") @(prod.Color != ProductColor.NA ? $"/{prod.Color}" : "")</option>
+                    }
+                </InputSelect>
+                <InputNumber @bind-Value="selectedQuantity" class="form-control mt-2" placeholder="Quantity" />
+                <button type="button" class="btn btn-outline-secondary mt-2" @onclick="AddItem" disabled="@(!selectedProductId.HasValue || selectedQuantity <= 0)">
+                    Add to Box
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary" disabled="@(!Form.IsValid())">
+                Create Transfer Box
+            </button>
+            <a href="/inventory" class="btn btn-secondary">Cancel</a>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [SupplyParameterFromForm] public TransferBoxFormModel Form { get; set; } = new();
+    private int? selectedProductId;
+    private int selectedQuantity;
+
+    private List<Location> Locations = new();
+    private List<Product> Products = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        Locations = await context.Locations.Where(l => l.IsActive).ToListAsync();
+        Products = await context.Products.Where(p => p.IsActive).Include(p => p.Category).ToListAsync();
+    }
+
+    private void AddItem()
+    {
+        if (selectedProductId.HasValue && selectedQuantity > 0)
+        {
+            Form.Items.Add(new TransferBoxItemModel 
+            { 
+                ProductId = selectedProductId.Value, 
+                Quantity = selectedQuantity 
+            });
+            selectedProductId = null;
+            selectedQuantity = 0;
+        }
+    }
+
+    private string GetProductName(int productId)
+    {
+        var prod = Products.FirstOrDefault(p => p.Id == productId);
+        return prod?.Name ?? "Unknown";
+    }
+
+    private async Task CreateTransfer()
+    {
+        if (!Form.FromLocationId.HasValue || !Form.ToLocationId.HasValue || !Form.Items.Any()) return;
+
+        using var context = await DbFactory.CreateDbContextAsync();
+        using var transaction = await context.Database.BeginTransactionAsync();
+
+        try
+        {
+            // 1. Create transfer box record
+            var transferBox = new StockTransferBox 
+            { 
+                FromLocationId = Form.FromLocationId.Value,
+                ToLocationId = Form.ToLocationId.Value,
+                Notes = Form.Notes
+            };
+            context.StockTransferBoxes.Add(transferBox);
+            await context.SaveChangesAsync();
+
+            // 2. Create items
+            foreach (var item in Form.Items)
+            {
+                context.StockTransferBoxItems.Add(new StockTransferBoxItem
+                {
+                    StockTransferBoxId = transferBox.Id,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity
+                });
+            }
+            await context.SaveChangesAsync();
+
+            // 3. MOVE STOCK: ProductLocation updates
+            foreach (var item in Form.Items)
+            {
+                var productId = item.ProductId;
+                var fromLocId = Form.FromLocationId.Value;
+                var toLocId = Form.ToLocationId.Value;
+                var qty = item.Quantity;
+
+                // Subtract from source
+                var fromStock = await context.ProductLocations
+                    .FirstOrDefaultAsync(pl => pl.ProductId == productId && pl.LocationId == fromLocId);
+                if (fromStock != null)
+                {
+                    fromStock.Quantity -= qty;
+                    if (fromStock.Quantity == 0) context.ProductLocations.Remove(fromStock);
+                }
+
+                // Add to destination (create if missing)
+                var toStock = await context.ProductLocations
+                    .FirstOrDefaultAsync(pl => pl.ProductId == productId && pl.LocationId == toLocId);
+                if (toStock == null)
+                {
+                    toStock = new ProductLocation 
+                    { 
+                        ProductId = productId, 
+                        LocationId = toLocId, 
+                        Quantity = 0 
+                    };
+                    context.ProductLocations.Add(toStock);
+                }
+                toStock.Quantity += qty;
+                toStock.LastUpdated = DateTime.UtcNow;
+            }
+            await context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+            Navigation.NavigateTo("/locations");
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+    public class TransferBoxFormModel
+    {
+        public int? FromLocationId { get; set; }
+        public int? ToLocationId { get; set; }
+        public string? Notes { get; set; }
+        public List<TransferBoxItemModel> Items { get; set; } = new();
+
+        public bool IsValid() => FromLocationId.HasValue && ToLocationId.HasValue && Items.Any();
+    }
+
+    public class TransferBoxItemModel
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
+    }
+}

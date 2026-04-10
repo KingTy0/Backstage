@@ -1,0 +1,112 @@
+@page "/inventory/transfer/details/{Id:int}"
+@using Microsoft.EntityFrameworkCore
+@using PuppetFestAPP.Web.Data
+@rendermode InteractiveServer
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Transfer Details</PageTitle>
+
+@if (TransferBox == null)
+{
+    <div class="alert alert-warning">Loading...</div>
+}
+else
+{
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Transfer #@TransferBox.Id</h1>
+            <a href="/inventory/transfer/edit/@Id" class="btn btn-warning">Edit</a>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h4>@TransferBox.FromLocation.Name</h4>
+                        <span class="badge bg-secondary fs-6">@TransferBox.FromLocation.Type</span>
+                        <p class="text-muted">@TransferBox.FromLocation.Address</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-center my-auto">
+                <i class="bi bi-arrow-right-circle-fill display-1 text-primary"></i>
+                <p class="text-muted small">Transferred @TransferBox.CreatedAt.ToString("MMM dd, yyyy HH:mm")</p>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h4>@TransferBox.ToLocation.Name</h4>
+                        <span class="badge bg-primary fs-6">@TransferBox.ToLocation.Type</span>
+                        <p class="text-muted">@TransferBox.ToLocation.Address</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(TransferBox.Notes))
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p>@TransferBox.Notes</p>
+                </div>
+            </div>
+        }
+
+        <h3>Items (@TransferBox.Items.Count)</h3>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Product</th>
+                        <th>Size/Color</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in TransferBox.Items.OrderBy(i => i.Product.Name))
+                    {
+                        <tr>
+                            <td>@item.Product.Name</td>
+                            <td>
+                                @(item.Product.Size != ProductSize.NA ? item.Product.Size.ToString() : "-")
+                                @if (item.Product.Color != ProductColor.NA)
+                                {
+                                    <span class="badge bg-secondary ms-1">@item.Product.Color</span>
+                                }
+                            </td>
+                            <td><span class="badge bg-info">@item.Quantity</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+            <a href="/inventory/transfers" class="btn btn-secondary">← Back to Transfers</a>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private StockTransferBox? TransferBox;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        TransferBox = await context.StockTransferBoxes
+            .Include(b => b.FromLocation)
+            .Include(b => b.ToLocation)
+            .Include(b => b.Items).ThenInclude(i => i.Product)
+            .FirstOrDefaultAsync(b => b.Id == Id);
+
+        if (TransferBox == null)
+        {
+            Navigation.NavigateTo("/inventory/transfers");
+        }
+    }
+}
