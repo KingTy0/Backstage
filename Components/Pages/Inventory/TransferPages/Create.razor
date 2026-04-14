@@ -16,8 +16,13 @@
 
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label class="form-label">From Location</label>
-                <InputSelect @bind-Value="Form.FromLocationId" class="form-control">
+                <label class="form-label">From Location (Source)</label>
+                @* Changed to use the OnFromLocationChanged sensor *@
+                <InputSelect TValue="int?" 
+                             Value="Form.FromLocationId" 
+                             ValueChanged="OnFromLocationChanged" 
+                             ValueExpression="() => Form.FromLocationId" 
+                             class="form-control">
                     <option value="0">Select Source...</option>
                     @foreach (var loc in Locations.Where(l => l.IsActive))
                     {
@@ -26,7 +31,7 @@
                 </InputSelect>
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label">To Location</label>
+                <label class="form-label">To Location (Destination)</label>
                 <InputSelect @bind-Value="Form.ToLocationId" class="form-control">
                     <option value="0">Select Destination...</option>
                     @foreach (var loc in Locations.Where(l => l.IsActive))
@@ -70,18 +75,37 @@
             </table>
         }
 
-        <div class="row">
+        <div class="row border p-3 bg-light rounded">
             <div class="col-md-6 mb-3">
                 <label class="form-label">Add Product</label>
-                <InputSelect @bind-Value="selectedProductId" class="form-control">
+                @* Changed to use the OnProductSelected sensor *@
+                <InputSelect TValue="int?" 
+                             Value="selectedProductId" 
+                             ValueChanged="OnProductSelected" 
+                             ValueExpression="() => selectedProductId" 
+                             class="form-control">
                     <option value="0">Select Product...</option>
-                    @foreach (var prod in Products.Where(p => p.IsActive))
+                    @foreach (var prod in Products)
                     {
-                        <option value="@prod.Id">@prod.Name @(prod.Size != ProductSize.NA ? $"({prod.Size})" : "") @(prod.Color != ProductColor.NA ? $"/{prod.Color}" : "")</option>
+                        <option value="@prod.Id">@prod.Name @(prod.Size != ProductSize.NA ? $"({prod.Size})" : "")</option>
                     }
                 </InputSelect>
+
+                @if (selectedProductId > 0)
+                {
+                    <div class="form-text text-primary">In stock here: <strong>@maxAvailable</strong></div>
+                }
+                
                 <InputNumber @bind-Value="selectedQuantity" class="form-control mt-2" placeholder="Quantity" />
-                <button type="button" class="btn btn-outline-secondary mt-2" @onclick="AddItem" disabled="@(!selectedProductId.HasValue || selectedQuantity <= 0)">
+                
+                @if (selectedQuantity > maxAvailable)
+                {
+                    <div class="text-danger fw-bold small">Error: You only have @maxAvailable available!</div>
+                }
+
+                <button type="button" class="btn btn-outline-secondary mt-2" 
+                        @onclick="AddItem" 
+                        disabled="@(selectedProductId == null || selectedQuantity <= 0 || selectedQuantity > maxAvailable)">
                     Add to Box
                 </button>
             </div>
@@ -100,6 +124,7 @@
     [SupplyParameterFromForm] public TransferBoxFormModel Form { get; set; } = new();
     private int? selectedProductId;
     private int selectedQuantity;
+    private int maxAvailable; // Tracks actual stock for the selected product
 
     private List<Location> Locations = new();
     private List<Product> Products = new();
@@ -108,12 +133,54 @@
     {
         using var context = await DbFactory.CreateDbContextAsync();
         Locations = await context.Locations.Where(l => l.IsActive).ToListAsync();
-        Products = await context.Products.Where(p => p.IsActive).Include(p => p.Category).ToListAsync();
+        // We no longer load all products here. We wait for a location to be picked.
+    }
+
+    private async Task OnFromLocationChanged(int? newLocationId)
+    {
+        Form.FromLocationId = newLocationId;
+        Form.Items.Clear(); // Clear the box if the source location changes
+        selectedProductId = null;
+        maxAvailable = 0;
+
+        if (newLocationId.HasValue && newLocationId > 0)
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+            
+            // Only pull products that actually have a record at this specific location with Qty > 0
+            Products = await context.ProductLocations
+                .Where(pl => pl.LocationId == newLocationId && pl.Quantity > 0)
+                .Include(pl => pl.Product)
+                .Select(pl => pl.Product!)
+                .ToListAsync();
+        }
+        else
+        {
+            Products.Clear();
+        }
+    }
+
+    private async Task OnProductSelected(int? productId)
+    {
+        selectedProductId = productId;
+        if (productId.HasValue && productId > 0 && Form.FromLocationId.HasValue)
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+            // Find the exact quantity sitting at the 'From' location
+            maxAvailable = await context.ProductLocations
+                .Where(pl => pl.LocationId == Form.FromLocationId && pl.ProductId == productId)
+                .Select(pl => pl.Quantity)
+                .FirstOrDefaultAsync();
+        }
+        else
+        {
+            maxAvailable = 0;
+        }
     }
 
     private void AddItem()
     {
-        if (selectedProductId.HasValue && selectedQuantity > 0)
+        if (selectedProductId.HasValue && selectedQuantity > 0 && selectedQuantity <= maxAvailable)
         {
             Form.Items.Add(new TransferBoxItemModel 
             { 
@@ -122,13 +189,15 @@
             });
             selectedProductId = null;
             selectedQuantity = 0;
+            maxAvailable = 0;
         }
     }
 
     private string GetProductName(int productId)
     {
+        // Check the filtered list first, then query database if needed (fallback)
         var prod = Products.FirstOrDefault(p => p.Id == productId);
-        return prod?.Name ?? "Unknown";
+        return prod?.Name ?? "Selected Item";
     }
 
     private async Task CreateTransfer()
@@ -140,7 +209,6 @@
 
         try
         {
-            // 1. Create transfer box record
             var transferBox = new StockTransferBox 
             { 
                 FromLocationId = Form.FromLocationId.Value,
@@ -150,55 +218,33 @@
             context.StockTransferBoxes.Add(transferBox);
             await context.SaveChangesAsync();
 
-            // 2. Create items
-            foreach (var item in Form.Items)
+          foreach (var item in Form.Items)
+        {
+           
+            context.StockTransferBoxItems.Add(new StockTransferBoxItem
             {
-                context.StockTransferBoxItems.Add(new StockTransferBoxItem
-                {
-                    StockTransferBoxId = transferBox.Id,
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity
-                });
-            }
-            await context.SaveChangesAsync();
+                StockTransferBoxId = transferBox.Id,
+                ProductId = item.ProductId,
+                Quantity = item.Quantity
+            });
 
-            // 3. MOVE STOCK: ProductLocation updates
-            foreach (var item in Form.Items)
+           
+            var fromStock = await context.ProductLocations
+                .FirstOrDefaultAsync(pl => pl.ProductId == item.ProductId && pl.LocationId == Form.FromLocationId.Value);
+            
+            if (fromStock != null)
             {
-                var productId = item.ProductId;
-                var fromLocId = Form.FromLocationId.Value;
-                var toLocId = Form.ToLocationId.Value;
-                var qty = item.Quantity;
-
-                // Subtract from source
-                var fromStock = await context.ProductLocations
-                    .FirstOrDefaultAsync(pl => pl.ProductId == productId && pl.LocationId == fromLocId);
-                if (fromStock != null)
-                {
-                    fromStock.Quantity -= qty;
-                    if (fromStock.Quantity == 0) context.ProductLocations.Remove(fromStock);
-                }
-
-                // Add to destination (create if missing)
-                var toStock = await context.ProductLocations
-                    .FirstOrDefaultAsync(pl => pl.ProductId == productId && pl.LocationId == toLocId);
-                if (toStock == null)
-                {
-                    toStock = new ProductLocation 
-                    { 
-                        ProductId = productId, 
-                        LocationId = toLocId, 
-                        Quantity = 0 
-                    };
-                    context.ProductLocations.Add(toStock);
-                }
-                toStock.Quantity += qty;
-                toStock.LastUpdated = DateTime.UtcNow;
+                fromStock.Quantity -= item.Quantity;
+                
+                fromStock.LastUpdated = DateTime.UtcNow; 
             }
+            
+           
+        }
+            
             await context.SaveChangesAsync();
-
             await transaction.CommitAsync();
-            Navigation.NavigateTo("/locations");
+            Navigation.NavigateTo("/inventory");
         }
         catch
         {
@@ -206,13 +252,13 @@
             throw;
         }
     }
+
     public class TransferBoxFormModel
     {
         public int? FromLocationId { get; set; }
         public int? ToLocationId { get; set; }
         public string? Notes { get; set; }
         public List<TransferBoxItemModel> Items { get; set; } = new();
-
         public bool IsValid() => FromLocationId.HasValue && ToLocationId.HasValue && Items.Any();
     }
 

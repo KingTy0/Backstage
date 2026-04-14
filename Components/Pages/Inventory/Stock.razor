@@ -13,9 +13,18 @@
     @foreach (var locGroup in StockData.GroupBy(x => x.Location))
     {
         <div class="card mb-4">
-            <div class="card-header">
-                <h3>@locGroup.Key.Name (@((LocationType)locGroup.Key.Type)!) - Total: @locGroup.Sum(x => x.Quantity) items</h3>
+            @* The d-flex and justify-content-between push the button to the right *@
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    @locGroup.Key.Name (@((LocationType)locGroup.Key.Type)!) - Total: @locGroup.Sum(x => x.Quantity) items
+                </h3>
+
+                @* locGroup.Key is the Location object, so we grab its ID for the link *@
+                <a href="/inventory/adjust/@locGroup.Key.Id" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-pencil-square"></i> End of Day Adjustment
+                </a>
             </div>
+
             <div class="card-body p-0">
                 <QuickGrid Items="@((IQueryable<ProductLocation>)locGroup.AsQueryable())" TGridItem="ProductLocation">
                     <TemplateColumn Title="Product" Context="item">
