@@ -110,25 +110,40 @@ else
     private async Task UpdateTransfer()
     {
         using var context = await DbFactory.CreateDbContextAsync();
-        using var transaction = context.Database.BeginTransaction();
+        var box = await context.StockTransferBoxes.Include(b => b.Items).FirstOrDefaultAsync(b => b.Id == Id);
+        
+        if (box == null || box.IsDelivered) return; // Cannot edit delivered boxes
 
-        try
-        {
-            var box = await context.StockTransferBoxes.FindAsync(Id);
-            if (box != null && Form != null)
-            {
-                box.Notes = Form.Notes;
-                // Locations cannot be changed after creation
-                await context.SaveChangesAsync();
+        using var transaction = await context.Database.BeginTransactionAsync();
+        try {
+            // Handle Location Change
+            if (box.FromLocationId != Form.FromLocationId) {
+                foreach (var item in box.Items) {
+                    // 1. Refund the OLD location
+                    var oldStock = await context.ProductLocations.FirstOrDefaultAsync(pl => pl.LocationId == box.FromLocationId && pl.ProductId == item.ProductId);
+                    if (oldStock == null) {
+                        context.ProductLocations.Add(new ProductLocation { LocationId = box.FromLocationId, ProductId = item.ProductId, Quantity = item.Quantity });
+                    } else {
+                        oldStock.Quantity += item.Quantity;
+                    }
+
+                    
+                    var newStock = await context.ProductLocations.FirstOrDefaultAsync(pl => pl.LocationId == Form.FromLocationId && pl.ProductId == item.ProductId);
+                    if (newStock == null || newStock.Quantity < item.Quantity) {
+                        throw new Exception($"New location doesn't have enough {item.ProductId}!");
+                    }
+                    newStock.Quantity -= item.Quantity;
+                }
+                box.FromLocationId = Form.FromLocationId;
             }
-
+            
+            box.ToLocationId = Form.ToLocationId;
+            box.Notes = Form.Notes;
+            await context.SaveChangesAsync();
             await transaction.CommitAsync();
-            Navigation.NavigateTo($"/inventory/transfer/details/{Id}");
-        }
-        catch
-        {
+        } catch (Exception ex) {
             await transaction.RollbackAsync();
-            throw;
+            // Show error to user
         }
     }
 

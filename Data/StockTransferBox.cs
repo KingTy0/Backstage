@@ -18,6 +18,10 @@ public class StockTransferBox
     public Location FromLocation { get; set; } = null!;
     [ValidateNever]
     public Location ToLocation { get; set; } = null!;
+
+    public bool IsDelivered { get; set; } = false;
+    public string Status => IsDelivered ? "Delivered" : "In Progress";
+
     public ICollection<StockTransferBoxItem> Items { get; set; } = new List<StockTransferBoxItem>();
 }
 
