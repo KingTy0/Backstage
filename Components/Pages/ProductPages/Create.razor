@@ -2,6 +2,7 @@
 @using Microsoft.EntityFrameworkCore
 @using PuppetFestAPP.Web.Data
 @using PuppetFestAPP.Web.Models
+@attribute [Authorize(Policy = AppPolicies.CanEditProducts)]
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager NavigationManager
 @inject IWebHostEnvironment Environment
