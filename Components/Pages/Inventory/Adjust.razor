@@ -8,9 +8,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>End of Day Adjustment: @LocationName</h2>
-        <button class="btn btn-success" @onclick="SaveAdjustments">
-            <i class="bi bi-check-lg"></i> Save & Reconcile
-        </button>
+        <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Success" @onclick="SaveAdjustments"><i class="bi bi-check-lg"></i> Save & Reconcile</MudButton>
     </div>
 
     <div class="alert alert-info py-2">
@@ -36,8 +34,8 @@
                     </td>
                     <td class="text-center">@item.SystemQuantity</td>
                     <td class="text-center">
-                        <input type="number" class="form-control form-control-sm mx-auto" 
-                               @bind="item.NewQuantity" @bind:event="oninput" 
+                        <MudNumericField @bind-Value="item.NewQuantity"  
+                                @bind:event="oninput" 
                                style="width: 80px;" />
                     </td>
                     <td class="text-center">
@@ -45,7 +43,7 @@
                             var diff = item.NewQuantity - item.SystemQuantity;
                             if (diff == 0) { <span class="text-muted">-</span> }
                             else if (diff > 0) { <span class="text-success">+@diff</span> }
-                            else { <span class="text-danger">@diff</span> }
+                            else { <span class="mud-text-error">@diff</span> }
                         }
                     </td>
                 </tr>

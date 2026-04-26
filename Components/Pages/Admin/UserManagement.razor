@@ -57,8 +57,7 @@
 {
     <div class="alert @statusCssClass alert-dismissible fade show" role="alert">
         @statusMessage
-        <button type="button" class="btn-close" @onclick="() => statusMessage = string.Empty">
-        </button>
+        <MudButton Type="Button" Variant="Variant.Filled" Color="Color.Primary"   @onclick="() =>statusMessage = string.Empty"></MudButton>
     </div>
 }
 
@@ -74,11 +73,11 @@
                 <label class="form-label">Email</label>
                 @* @bind creates two-way binding: typing updates
                    newUserEmail, and newUserEmail changes update the input *@
-                <input type="email" class="form-control" @bind="newUserEmail" placeholder="user@example.com" />
+                <MudTextField InputType="InputType.Email" @bind-Value="newUserEmail"   placeholder="user@example.com" />
             </div>
             <div class="col-md-3">
                 <label class="form-label">Password</label>
-                <input type="password" class="form-control" @bind="newUserPassword"
+                <MudTextField InputType="InputType.Password" @bind-Value="newUserPassword"  
                        placeholder="Min 6 chars, 1 upper, 1 digit" />
             </div>
             <div class="col-md-3">
@@ -95,9 +94,7 @@
             <div class="col-md-2 d-flex align-items-end">
                 @* @onclick binds this button to the CreateUser() method.
                    When clicked, Blazor calls CreateUser() via SignalR. *@
-                <button class="btn btn-primary w-100" @onclick="CreateUser">
-                    Create User
-                </button>
+                <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" @onclick="CreateUser">Create User</MudButton>
             </div>
         </div>
     </div>
@@ -158,18 +155,15 @@
                                     }
 
                                 </select>
-                                <button class="btn btn-sm
-                                    btn-outline-primary me-1" @onclick="() => AddRoleToUser(user)">
-                                    + Role
-                                </button>
+                                <MudButton Type="Submit" Variant="Variant.Outlined" Color="Color.Primary" Size.Small @onclick="() =>AddRoleToUser(user)">
+                                    + Role</MudButton>
 
                                 @* Delete button: disabled for the seed admin
                                    to prevent locking yourself out *@
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user)"
+                                <MudButton Type="Submit" Variant="Variant.Outlined" Color="Color.Error" Size.Small @onclick="() =>DeleteUser(user)"
                                         disabled="@(user.Email ==
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       "admin@puppetfest.local")">
-                                    Delete
-                                </button>
+                                    Delete</MudButton>
                             </td>
                         </tr>
                     }

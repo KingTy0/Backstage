@@ -12,13 +12,13 @@
 <h1>Product Management</h1>
 
 <p>
-    <a href="products/create" class="btn btn-primary">Create New Master Product</a>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="products/create">Create New Master Product</MudButton>
 </p>
 
 @* Search Bar *@
 <div class="mb-3 mt-3">
-    <input type="search" class="form-control" placeholder="Search by product name..." 
-           @bind="searchTerm" @bind:event="oninput" />
+    <MudTextField @bind-Value="searchTerm" InputType="InputType.Search"  placeholder="Search by product name..." 
+            @bind:event="oninput" />
 </div>
 
 <QuickGrid Items="FilteredProducts" Pagination="pagination">
@@ -47,9 +47,9 @@
     
     <TemplateColumn Context="prod" Title="Actions">
         <div class="btn-group">
-            <a href="@($"/products/edit/{prod.Id}")" class="btn btn-sm btn-outline-primary">Edit</a>
-            <a href="@($"/products/details/{prod.Id}")" class="btn btn-sm btn-info text-white">Manage Inventory</a>
-            <a href="@($"/products/delete/{prod.Id}")" class="btn btn-sm btn-danger">Delete</a>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/products/edit/" + prod.Id)">Edit</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/products/details/" + prod.Id)">Manage Inventory</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Href="@("/products/delete/" + prod.Id)">Delete</MudButton>
         </div>
     </TemplateColumn>
 </QuickGrid>

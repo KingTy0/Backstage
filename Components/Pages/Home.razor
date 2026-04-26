@@ -1,4 +1,4 @@
-﻿@* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    File: Components/Pages/Home.razor
 
    PURPOSE: The root landing page at "/". Shows different content
@@ -34,8 +34,8 @@
         <p>
             @* These links point to the Identity pages that were
                auto-generated in Components/Account/Pages/ *@
-            <a href="Account/Login"  class="btn btn-primary btn-lg me-2">Login</a>
-            <a href="Account/Register" class="btn btn-outline-secondary btn-lg">Register</a>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="Account/Login">Login</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="Account/Register">Register</MudButton>
         </p>
     </NotAuthorized>
 </AuthorizeView>

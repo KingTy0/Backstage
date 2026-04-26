@@ -12,7 +12,7 @@
     
     <EditForm Model="Form" OnValidSubmit="CreateTransfer" FormName="transferBox" Enhance>
         <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" />
+        <ValidationSummary class="mud-text-error" />
 
         <div class="row">
             <div class="col-md-6 mb-3">
@@ -22,7 +22,7 @@
                              Value="Form.FromLocationId" 
                              ValueChanged="OnFromLocationChanged" 
                              ValueExpression="() => Form.FromLocationId" 
-                             class="form-control">
+                             >
                     <option value="0">Select Source...</option>
                     @foreach (var loc in Locations.Where(l => l.IsActive))
                     {
@@ -32,7 +32,7 @@
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label">To Location (Destination)</label>
-                <InputSelect @bind-Value="Form.ToLocationId" class="form-control">
+                <InputSelect @bind-Value="Form.ToLocationId" >
                     <option value="0">Select Destination...</option>
                     @foreach (var loc in Locations.Where(l => l.IsActive))
                     {
@@ -44,7 +44,7 @@
 
         <div class="mb-3">
             <label class="form-label">Notes (optional)</label>
-            <InputTextArea @bind-Value="Form.Notes" class="form-control" rows="2" />
+            <MudTextField TextArea="true" Lines="2" @bind-Value="Form.Notes" /> 
         </div>
 
         @if (Form.Items.Any())
@@ -65,9 +65,8 @@
                             <td>@GetProductName(item.ProductId)</td>
                             <td>@item.Quantity</td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-danger" @onclick="() => Form.Items.Remove(item)">
-                                    Remove
-                                </button>
+                                <MudButton Type="Button" Variant="Variant.Filled" Color="Color.Error" Size.Small   @onclick="() =>Form.Items.Remove(item)">
+                                    Remove</MudButton>
                             </td>
                         </tr>
                     }
@@ -83,7 +82,7 @@
                              Value="selectedProductId" 
                              ValueChanged="OnProductSelected" 
                              ValueExpression="() => selectedProductId" 
-                             class="form-control">
+                             >
                     <option value="0">Select Product...</option>
                     @foreach (var prod in Products)
                     {
@@ -96,26 +95,23 @@
                     <div class="form-text text-primary">In stock here: <strong>@maxAvailable</strong></div>
                 }
                 
-                <InputNumber @bind-Value="selectedQuantity" class="form-control mt-2" placeholder="Quantity" />
+                <MudNumericField @bind-Value="selectedQuantity"  placeholder="Quantity" />
                 
                 @if (selectedQuantity > maxAvailable)
                 {
                     <div class="text-danger fw-bold small">Error: You only have @maxAvailable available!</div>
                 }
 
-                <button type="button" class="btn btn-outline-secondary mt-2" 
+                <MudButton Type="Button" Variant="Variant.Outlined" Color="Color.Secondary"   
                         @onclick="AddItem" 
-                        disabled="@(selectedProductId == null || selectedQuantity <= 0 || selectedQuantity > maxAvailable)">
-                    Add to Box
-                </button>
+                        disabled="@(selectedProductId == null || selectedQuantity <= 0 || selectedQuantity>maxAvailable)">
+                    Add to Box</MudButton>
             </div>
         </div>
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-primary" disabled="@(!Form.IsValid())">
-                Create Transfer Box
-            </button>
-            <a href="/inventory" class="btn btn-secondary">Cancel</a>
+            <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Primary"   disabled="@(!Form.IsValid())">Create Transfer Box</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/inventory">Cancel</MudButton>
         </div>
     </EditForm>
 </div>

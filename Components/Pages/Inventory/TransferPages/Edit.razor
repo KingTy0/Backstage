@@ -18,12 +18,12 @@ else
         
         <EditForm Model="Form" OnValidSubmit="UpdateTransfer" FormName="editTransfer" Enhance>
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" />
+            <ValidationSummary class="mud-text-error" />
 
             <div class="row mb-3">
                 <div class="col-md-5">
                     <label class="form-label">From Location</label>
-                    <InputSelect @bind-Value="Form.FromLocationId" class="form-control" disabled="@IsReadOnly">
+                    <InputSelect @bind-Value="Form.FromLocationId"  disabled="@IsReadOnly">
                         @foreach (var loc in Locations.Where(l => l.IsActive))
                         {
                             <option value="@loc.Id">@loc.Name (@loc.Type)</option>
@@ -32,7 +32,7 @@ else
                 </div>
                 <div class="col-md-5">
                     <label class="form-label">To Location</label>
-                    <InputSelect @bind-Value="Form.ToLocationId" class="form-control" disabled="@IsReadOnly">
+                    <InputSelect @bind-Value="Form.ToLocationId"  disabled="@IsReadOnly">
                         @foreach (var loc in Locations.Where(l => l.IsActive))
                         {
                             <option value="@loc.Id">@loc.Name (@loc.Type)</option>
@@ -40,15 +40,13 @@ else
                     </InputSelect>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
-                    <button type="button" class="btn btn-outline-secondary w-100" @onclick="ToggleEdit">
-                        @(IsReadOnly ? "Edit" : "Cancel")
-                    </button>
+                    <MudButton Type="Button" Variant="Variant.Outlined" Color="Color.Secondary" FullWidth="true"   @onclick="ToggleEdit">@(IsReadOnly ? "Edit" : "Cancel")</MudButton>
                 </div>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Notes</label>
-                <InputTextArea @bind-Value="Form.Notes" class="form-control" rows="3" disabled="@IsReadOnly" />
+                <MudTextField TextArea="true" Lines="3" @bind-Value="Form.Notes" disabled="@IsReadOnly" /> 
             </div>
 
             @if (!IsReadOnly)
@@ -61,12 +59,12 @@ else
             <div class="mt-4">
                 @if (IsReadOnly)
                 {
-                    <a href="/inventory/transfers" class="btn btn-secondary">Back</a>
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/inventory/transfers">Back</MudButton>
                 }
                 else
                 {
-                    <button type="submit" class="btn btn-success">Save Changes</button>
-                    <a href="/inventory/transfer/details/@Id" class="btn btn-secondary">Cancel</a>
+                    <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Success" >Save Changes</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="@("/inventory/transfer/details/" + Id)">Cancel</MudButton>
                 }
             </div>
         </EditForm>

@@ -64,7 +64,7 @@
             <dd class="col-sm-10">@product.CategoryId</dd>
         </dl>
         <EditForm method="post" Model="product" OnValidSubmit="DeleteProduct" FormName="delete" Enhance>
-            <button type="submit" class="btn btn-danger" disabled="@(product is null)">Delete</button> |
+            <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Error"   disabled="@(product is null)">Delete</MudButton> |
             <a href="/products">Back to List</a>
         </EditForm>
     }

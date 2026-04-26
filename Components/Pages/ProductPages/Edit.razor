@@ -19,24 +19,24 @@
     {
         <EditForm method="post" Model="Form" OnValidSubmit="UpdateProduct" FormName="editProduct">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" />
+            <ValidationSummary class="mud-text-error" />
 
             <div class="mb-3">
                 <label class="form-label">Name:</label>
-                <InputText @bind-Value="Form.Name" class="form-control" />
-                <ValidationMessage For="() => Form.Name" class="text-danger" />
+                <MudTextField @bind-Value="Form.Name"  />
+                <ValidationMessage For="() => Form.Name" class="mud-text-error" />
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Price:</label>
-                <InputNumber @bind-Value="Form.Price" class="form-control" />
-                <ValidationMessage For="() => Form.Price" class="text-danger" />
+                <MudNumericField @bind-Value="Form.Price"  />
+                <ValidationMessage For="() => Form.Price" class="mud-text-error" />
             </div>
 
             @* --- SIZE DROPDOWN --- *@
             <div class="mb-3">
                 <label class="form-label">Size:</label>
-                <InputSelect @bind-Value="Form.Size" class="form-control">
+                <InputSelect @bind-Value="Form.Size" >
                     <option value="">-- Select Size --</option>
                     @foreach (var size in Enum.GetValues<ProductSize>())
                     {
@@ -48,7 +48,7 @@
             @* --- COLOR DROPDOWN --- *@
             <div class="mb-3">
                 <label class="form-label">Color:</label>
-                <InputSelect @bind-Value="Form.Color" class="form-control">
+                <InputSelect @bind-Value="Form.Color" >
                     <option value="">-- Select Color --</option>
                     @foreach (var color in Enum.GetValues<ProductColor>())
                     {
@@ -59,7 +59,7 @@
 
             <div class="mb-3">
                 <label class="form-label">Category:</label>
-                <InputSelect @bind-Value="Form.CategoryId" class="form-control">
+                <InputSelect @bind-Value="Form.CategoryId" >
                     @foreach (var cat in Categories)
                     {
                         <option value="@cat.Id">@cat.Name</option>
@@ -69,12 +69,12 @@
 
             <div class="mb-3">
                 <label class="form-label">Description:</label>
-                <InputTextArea @bind-Value="Form.Description" class="form-control" rows="3" />
+                <MudTextField TextArea="true" Lines="3" @bind-Value="Form.Description" /> 
             </div>
 
             <div class="mt-4">
-                <button type="submit" class="btn btn-success">Save Changes</button>
-                <a href="/products" class="btn btn-secondary">Cancel</a>
+                <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Success" >Save Changes</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/products">Cancel</MudButton>
             </div>
         </EditForm>
     }

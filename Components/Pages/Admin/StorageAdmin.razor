@@ -68,9 +68,7 @@
         <h5 class="mb-0">Manual Backup</h5>
     </div>
     <div class="card-body">
-        <button class="btn btn-primary"                @onclick="RunBackup"                disabled="@(!BackupService.IsEnabled || isRunning)">
-
-            @if (isRunning)
+        <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Primary" @onclick="RunBackup"                disabled="@(!BackupService.IsEnabled || isRunning)">@if (isRunning)
             {
                 @* Bootstrap spinner shown during async operation *@
                 <span class="spinner-border spinner-border-sm me-2">
@@ -80,9 +78,7 @@
             else
             {
                 <text>Backup Now</text>
-            }
-
-        </button>
+            }</MudButton>
 
 
         @if (!string.IsNullOrEmpty(resultMessage))
@@ -107,9 +103,7 @@
             sessions will be disrupted. An application restart is
             recommended after restoring.
         </div>
-        <button class="btn btn-warning"                @onclick="RunRestore"                disabled="@(!BackupService.IsEnabled || isRestoring)">
-
-            @if (isRestoring)
+        <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Warning" @onclick="RunRestore"                disabled="@(!BackupService.IsEnabled || isRestoring)">@if (isRestoring)
             {
                 <span class="spinner-border spinner-border-sm me-2">
                 </span>
@@ -118,9 +112,7 @@
             else
             {
                 <text>Restore Latest Backup</text>
-            }
-
-        </button>
+            }</MudButton>
     </div>
 </div>
 

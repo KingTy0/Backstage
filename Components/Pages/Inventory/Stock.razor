@@ -20,9 +20,7 @@
                 </h3>
 
                 @* locGroup.Key is the Location object, so we grab its ID for the link *@
-                <a href="/inventory/adjust/@locGroup.Key.Id" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-pencil-square"></i> End of Day Adjustment
-                </a>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/inventory/adjust/" + locGroup.Key.Id)"><i class="bi bi-pencil-square"></i> End of Day Adjustment</MudButton>
             </div>
 
             <div class="card-body p-0">

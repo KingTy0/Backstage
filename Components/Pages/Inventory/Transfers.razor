@@ -8,7 +8,7 @@
 <PageTitle>Transfer History</PageTitle>
 
 <h1>Transfer Boxes</h1>
-<a href="/inventory/transfer/create" class="btn btn-primary mb-3">+ New Transfer</a>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/inventory/transfer/create">+ New Transfer</MudButton>
 
 @if (TransferBoxes?.Any() == true)
 {
@@ -33,7 +33,7 @@
             }
         </TemplateColumn>
         <TemplateColumn Title="Actions" Context="box">
-            <a href="/inventory/transfer/details/@box.Id" class="btn btn-sm btn-outline-primary">View</a>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/inventory/transfer/details/" + box.Id)">View</MudButton>
         </TemplateColumn>
     </QuickGrid>
     <Paginator State="pagination" />

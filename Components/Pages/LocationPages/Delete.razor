@@ -31,10 +31,8 @@
         }
 
         <div class="mt-4">
-            <button class="btn btn-danger" @onclick="ConfirmDelete" disabled="@HasDependencies">
-                Permanently Delete
-            </button>
-            <a href="/locations" class="btn btn-secondary">Cancel</a>
+            <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Error" @onclick="ConfirmDelete" disabled="@HasDependencies">Permanently Delete</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/locations">Cancel</MudButton>
         </div>
     }
 </div>

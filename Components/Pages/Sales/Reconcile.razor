@@ -23,12 +23,12 @@
                 <td>@item.ProductName</td>
                 <td>@item.SystemSalesCount</td>
                 <td>
-                    <input type="number" class="form-control" @bind="item.ActualSalesCount" />
+                    <MudNumericField @bind-Value="item.ActualSalesCount"   />
                 </td>
                 <td>
                     @if(item.ActualSalesCount - item.SystemSalesCount != 0)
                     {
-                        <span class="text-danger">@(item.ActualSalesCount - item.SystemSalesCount)</span>
+                        <span class="mud-text-error">@(item.ActualSalesCount - item.SystemSalesCount)</span>
                     }
                 </td>
             </tr>
@@ -46,7 +46,7 @@
 </div>
 
 
-<button class="btn btn-primary" @onclick="SaveReconciliation">Finalize Nightly Sales</button>
+<MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Primary" @onclick="SaveReconciliation">Finalize Nightly Sales</MudButton>
 
 @code {
     [Parameter] public int LocationId { get; set; }

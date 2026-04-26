@@ -11,7 +11,7 @@
 <h1>Locations Management</h1>
 
 <p>
-    <a href="/locations/create" class="btn btn-primary">Create New Location</a>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/locations/create">Create New Location</MudButton>
 </p>
 
 @if (locations == null)
@@ -21,8 +21,8 @@
 else
 {
     <div class="mb-3">
-        <input type="search" class="form-control" placeholder="Search by name..." 
-               @bind="searchTerm" @bind:event="oninput" />
+        <MudTextField @bind-Value="searchTerm" InputType="InputType.Search"  placeholder="Search by name..." 
+                @bind:event="oninput" />
     </div>
 
     <QuickGrid Items="@((IQueryable<Location>)FilteredLocations.AsQueryable())" TGridItem="Location" Pagination="pagination">
@@ -36,8 +36,8 @@ else
         <PropertyColumn Property="@(l => l.IsActive)" Title="Active" />
         <TemplateColumn Context="loc" Title="Actions">
             <div class="btn-group">
-                <a href="@($"/locations/edit/{loc.Id}")" class="btn btn-sm btn-outline-primary">Edit</a>
-                <a href="@($"/locations/delete/{loc.Id}")" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete?')">Delete</a>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/locations/edit/" + loc.Id)">Edit</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/locations/delete/" + loc.Id)"  >Delete</MudButton>
             </div>
         </TemplateColumn>
     </QuickGrid>

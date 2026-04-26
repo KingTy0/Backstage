@@ -55,7 +55,7 @@
         <hr />
         <div class="d-flex justify-content-between align-items-center">
             <h3>Inventory Variants (Sizes/Colors)</h3>
-            <a href="@($"/products/create?parentId={Product.Id}")" class="btn btn-success btn-sm">+ Add New Variant</a>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/products/create?parentId=" + Product.Id)">+ Add New Variant</MudButton>
         </div>
 
         @if (Variants != null && Variants.Any())
@@ -79,12 +79,8 @@
                             <td class="text-center">
                                 @* Both buttons live inside this single <td> *@
                                 <div class="btn-group" role="group">
-                                    <a href="@($"/products/edit/{v.Id}")" class="btn btn-sm btn-outline-primary">
-                                        Edit
-                                    </a>
-                                    <a href="@($"/products/delete/{v.Id}")" class="btn btn-sm btn-outline-danger">
-                                        Delete
-                                    </a>
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/products/edit/" + v.Id)">Edit</MudButton>
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/products/delete/" + v.Id)">Delete</MudButton>
                                 </div>
                             </td>
                         </tr>
@@ -98,7 +94,7 @@
         }
 
         <div class="mt-4">
-            <a href="@($"/products/edit/{Product.Id}")" class="btn btn-primary">Edit Master</a> |
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/products/edit/" + Product.Id)">Edit Master</MudButton> |
             <a href="/products">Back to List</a>
         </div>
     }
