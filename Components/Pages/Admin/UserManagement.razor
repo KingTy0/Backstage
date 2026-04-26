@@ -35,6 +35,7 @@
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *@
 
 @page "/admin/users"
+@using System.Linq
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using PuppetFestAPP.Web.Data
@@ -48,134 +49,96 @@
 
 <PageTitle>User Management</PageTitle>
 
-<h1>User Management</h1>
-
-@* ── Status message banner ──
-   Shows success/error messages after user actions.
-   The CSS class (alert-success, alert-danger, etc.) is set dynamically. *@
-@if (!string.IsNullOrEmpty(statusMessage))
-{
-    <div class="alert @statusCssClass alert-dismissible fade show" role="alert">
-        @statusMessage
-        <button type="button" class="btn-close" @onclick="() => statusMessage = string.Empty">
+<div class="user-management-page">
+    <div class="user-management-header">
+        <div>
+            <p class="user-management-subtitle">Admin</p>
+            <h1>User Management</h1>
+        </div>
+        <button class="user-management-add-button btn btn-primary" @onclick="ToggleCreateUserForm" type="button">
+            <span class="user-management-add-icon" aria-hidden="true">+</span>
+            Add a User
         </button>
     </div>
-}
 
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @statusCssClass alert-dismissible fade show user-management-alert" role="alert">
+            @statusMessage
+            <button type="button" class="btn-close" @onclick="() => statusMessage = string.Empty"></button>
+        </div>
+    }
 
-@* ── Create New User Form ── *@
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">Create New User</h5>
-    </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Email</label>
-                @* @bind creates two-way binding: typing updates
-                   newUserEmail, and newUserEmail changes update the input *@
-                <input type="email" class="form-control" @bind="newUserEmail" placeholder="user@example.com" />
+    @if (showCreateUserForm)
+    {
+        <div class="user-management-card mb-4">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" @bind="newUserEmail" placeholder="user@example.com" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" @bind="newUserPassword"
+                               placeholder="Min 6 chars, 1 upper, 1 digit" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Role</label>
+                        <select class="form-select" @bind="newUserRole">
+                            @foreach (var role in AppRoles.AllRoles)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" @onclick="CreateUser">Create User</button>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-control" @bind="newUserPassword"
-                       placeholder="Min 6 chars, 1 upper, 1 digit" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Role</label>
-                <select class="form-select" @bind="newUserRole">
+        </div>
+    }
 
-                    @foreach (var role in AppRoles.AllRoles)
-                    {
-                        <option value="@role">@role</option>
-                    }
-
-                </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                @* @onclick binds this button to the CreateUser() method.
-                   When clicked, Blazor calls CreateUser() via SignalR. *@
-                <button class="btn btn-primary w-100" @onclick="CreateUser">
-                    Create User
+    <div class="user-management-groups">
+        @foreach (var roleGroup in usersByRole)
+        {
+            <section class="user-group">
+                <button class="user-group-header" type="button" @onclick="() => ToggleRoleGroup(roleGroup.Key)">
+                    <span>@roleGroup.Key (@roleGroup.Count())</span>
+                    <span class="user-group-chevron">@((expandedRoleGroups.Contains(roleGroup.Key)) ? "▾" : "▸")</span>
                 </button>
-            </div>
-        </div>
-    </div>
-</div>
 
-@* ── User List Table ── *@
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">All Users (@users.Count total)</h5>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-striped mb-0">
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Roles</th>
-                        <th>Email Confirmed</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in users)
-                    {
-                        <tr>
-                            <td>@user.Email</td>
-                            <td>
-                                @* Show each role as a Bootstrap badge *@
-
-                                @foreach (var role in user.Roles)
-                                {
-                                    <span class="badge bg-secondary me-1">
-                                        @role
-                                    </span>
-                                }
-
-                            </td>
-                            <td>
-
-                                @if (user.EmailConfirmed)
-                                {
-                                    <span class="text-success">✓ Yes</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">No</span>
-                                }
-
-                            </td>
-                            <td>
-                                @* Role assignment: dropdown + "Add" button *@
-                                <select class="form-select form-select-sm
-                                    d-inline-block w-auto me-2" @bind="user.SelectedNewRole">
-
-                                    @foreach (var role in AppRoles.AllRoles)
-                                    {
-                                        <option value="@role">@role</option>
-                                    }
-
-                                </select>
-                                <button class="btn btn-sm
-                                    btn-outline-primary me-1" @onclick="() => AddRoleToUser(user)">
-                                    + Role
-                                </button>
-
-                                @* Delete button: disabled for the seed admin
-                                   to prevent locking yourself out *@
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user)"
-                                        disabled="@(user.Email ==
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      "admin@puppetfest.local")">
-                                    Delete
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                @if (expandedRoleGroups.Contains(roleGroup.Key))
+                {
+                    <div class="user-group-list">
+                        @foreach (var user in roleGroup)
+                        {
+                            <div class="user-row">
+                                <div class="user-email">@user.Email</div>
+                                <div class="user-actions">
+                                    <div class="user-role-select">
+                                        <select class="form-select form-select-sm" @bind="user.SelectedNewRole">
+                                            @foreach (var role in AppRoles.AllRoles)
+                                            {
+                                                <option value="@role">@role</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary user-action-button" @onclick="() => AddRoleToUser(user)">
+                                        + Role
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger user-action-button" @onclick="() => DeleteUser(user)"
+                                            disabled="@(user.Email == "admin@puppetfest.local")">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+        }
     </div>
 </div>
 
@@ -190,6 +153,13 @@
     private string newUserRole = AppRoles.SalesStaff; // default selection for the "Role" dropdown in the "Create New User"
     private string statusMessage = "";
     private string statusCssClass = "";
+    private bool showCreateUserForm = false;
+    private HashSet<string> expandedRoleGroups = new();
+
+    private IEnumerable<IGrouping<string, UserViewModel>> usersByRole =>
+        users
+            .SelectMany(user => user.Roles.Select(role => new { role, user }))
+            .GroupBy(item => item.role, item => item.user);
 
     /// <summary>
     /// Called automatically by Blazor when the component first loads.
@@ -284,6 +254,23 @@
             statusMessage = "Error: " + string.Join(", ",
                 result.Errors.Select(e => e.Description));
             statusCssClass = "alert-danger";
+        }
+    }
+
+    private void ToggleCreateUserForm()
+    {
+        showCreateUserForm = !showCreateUserForm;
+    }
+
+    private void ToggleRoleGroup(string roleName)
+    {
+        if (expandedRoleGroups.Contains(roleName))
+        {
+            expandedRoleGroups.Remove(roleName);
+        }
+        else
+        {
+            expandedRoleGroups.Add(roleName);
         }
     }
 

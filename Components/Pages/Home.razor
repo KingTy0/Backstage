@@ -15,27 +15,40 @@
 
 <PageTitle>Puppet Fest Merch</PageTitle>
 
-<AuthorizeView>
-    @* ── Content for logged-in users ── *@
-    <Authorized>
-        <h1>Welcome back, @context.User.Identity?.Name!</h1>
-        <p>You are logged in.
-            <a href="/dashboard">Go to Dashboard →</a>
-        </p>
-    </Authorized>
+<div class="home-page">
+    <header class="home-appbar" aria-label="Application navigation">
+        <button type="button" class="home-menu-button" aria-label="Open menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
 
-    @* ── Content for anonymous visitors ── *@
-    <NotAuthorized>
-        <h1>Puppet Festival Merchandise</h1>
-        <p class="lead">
-            Welcome to the Chicago Puppet Festival merchandise
-            management system.
-        </p>
-        <p>
-            @* These links point to the Identity pages that were
-               auto-generated in Components/Account/Pages/ *@
-            <a href="Account/Login"  class="btn btn-primary btn-lg me-2">Login</a>
-            <a href="Account/Register" class="btn btn-outline-secondary btn-lg">Register</a>
-        </p>
-    </NotAuthorized>
-</AuthorizeView>
+    <main class="home-content" role="main">
+        <section class="home-hero">
+            <div class="home-logo-mark" aria-hidden="true"></div>
+            <h1 class="home-brand">Back Stage</h1>
+            <p class="home-tagline">Inventory Management Tool</p>
+            <p class="home-heading">Log in to Backstage</p>
+        </section>
+
+        <AuthorizeView>
+            <Authorized>
+                <section class="home-welcome-card">
+                    <h2>Welcome back, @context.User.Identity?.Name!</h2>
+                    <p>You are logged in.</p>
+                    <a href="/dashboard" class="home-dashboard-link">Go to Dashboard →</a>
+                </section>
+            </Authorized>
+            <NotAuthorized>
+                <section class="home-auth-card">
+                    <p class="home-auth-label">Ready to manage inventory?</p>
+                    <div class="home-auth-actions">
+                        <a href="Account/Login" class="btn btn-primary home-primary-btn">Log In</a>
+                        <a href="Account/ForgotPassword" class="home-secondary-link">Forgot password?</a>
+                    </div>
+                </section>
+            </NotAuthorized>
+        </AuthorizeView>
+    </main>
+</div>
