@@ -5,6 +5,7 @@
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager Navigation
 
+<<<<<<< Updated upstream
 <h3>Daily Sales Reconciliation: @LocationName</h3>
 <table class="table">
 <thead>
@@ -44,6 +45,48 @@
 </div>
 </div>
 <MudButton __at__onclick="SaveReconciliation" color="Color.Primary" type="Submit" variant="Variant.Filled">Finalize Nightly Sales</MudButton>
+=======
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h5">Daily Sales Reconciliation: @LocationName</MudText>
+
+    <MudTable Items="ReconcileList" Dense="true" Hover="true" Class="mt-4">
+        <HeaderContent>
+            <MudTh>Product</MudTh>
+            <MudTh>System Predicted Sales</MudTh>
+            <MudTh>Actual Sales (Manual Count)</MudTh>
+            <MudTh>Discrepancy</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.ProductName</MudTd>
+            <MudTd>@context.SystemSalesCount</MudTd>
+            <MudTd>
+                <MudNumericField @bind-Value="context.ActualSalesCount" Min="0" Class="mud-width-full" />
+            </MudTd>
+            <MudTd>
+                @if (context.ActualSalesCount - context.SystemSalesCount != 0)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Error">@(context.ActualSalesCount - context.SystemSalesCount)</MudText>
+                }
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">No reconciliation items available.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+
+    <MudPaper Elevation="0" Class="mt-4 pa-4">
+        <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <div>
+                <MudText Typo="Typo.h6">Total Expected Revenue</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Based on your manual count of items sold today.</MudText>
+            </div>
+            <MudText Typo="Typo.h5" Color="Color.Success">@TotalRevenue.ToString("C")</MudText>
+        </MudStack>
+    </MudPaper>
+
+    <MudButton Type="Button" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="SaveReconciliation">Finalize Nightly Sales</MudButton>
+</MudContainer>
+>>>>>>> Stashed changes
 
 @code {
     [Parameter] public int LocationId { get; set; }
@@ -51,6 +94,7 @@
     private List<salereconcileitem> ReconcileList = new();
 
     protected override async Task OnInitializedAsync()
+<<<<<<< Updated upstream
 {
     using var context = await DbFactory.CreateDbContextAsync();
     
@@ -67,27 +111,15 @@
     var Products = await context.Products.ToListAsync();
     
     ReconcileList = Products.Select(p => new SaleReconcileItem
+=======
+>>>>>>> Stashed changes
     {
-        ProductId = p.Id,
-        ProductName = p.Name,
-        UnitPrice = p.Price,
-        SystemSalesCount = salesToday.Where(s => s.ProductId == p.Id).Sum(s => s.QuantitySold),
-        ActualSalesCount = salesToday.Where(s => s.ProductId == p.Id).Sum(s => s.QuantitySold)
-    }).ToList();
-}
+        using var context = await DbFactory.CreateDbContextAsync();
 
-
-private async Task SaveReconciliation()
-{
-    using var context = await DbFactory.CreateDbContextAsync();
-
-    foreach (var item in ReconcileList)
-    {
-        var discrepancy = item.ActualSalesCount - item.SystemSalesCount;
-
-        // If discrepancy is 4, it means 4 more units were sold than recorded.
-        if (discrepancy != 0)
+        var location = await context.Locations.FindAsync(LocationId);
+        if (location != null)
         {
+<<<<<<< Updated upstream
             // 1. Find the specific stock record for this Location and Product
             var stockRecord = await context.ProductLocations
                 .FirstOrDefaultAsync(pl => pl.LocationId == LocationId && pl.ProductId == item.ProductId);
@@ -115,34 +147,80 @@ private async Task SaveReconciliation()
                 // SAFETY CHECK: If this triggers, the wrong LocationId was passed.
                 Console.WriteLine($"[DEBUG] No stock found for Prod ID: {item.ProductId} at Loc ID: {LocationId}");
             }
+=======
+            LocationName = location.Name;
+>>>>>>> Stashed changes
         }
+
+        var startOfToday = DateTime.UtcNow.Date;
+
+        var salesToday = await context.Sales
+            .Where(s => s.LocationId == LocationId && s.SaleDate >= startOfToday)
+            .ToListAsync();
+
+        var products = await context.Products.ToListAsync();
+
+        ReconcileList = products.Select(p => new SaleReconcileItem
+        {
+            ProductId = p.Id,
+            ProductName = p.Name,
+            UnitPrice = p.Price,
+            SystemSalesCount = salesToday.Where(s => s.ProductId == p.Id).Sum(s => s.QuantitySold),
+            ActualSalesCount = salesToday.Where(s => s.ProductId == p.Id).Sum(s => s.QuantitySold)
+        }).ToList();
     }
 
-    await context.SaveChangesAsync();
-    Navigation.NavigateTo("/inventory/stock");
+    private async Task SaveReconciliation()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        foreach (var item in ReconcileList)
+        {
+            var discrepancy = item.ActualSalesCount - item.SystemSalesCount;
+
+            if (discrepancy != 0)
+            {
+                var stockRecord = await context.ProductLocations
+                    .FirstOrDefaultAsync(pl => pl.LocationId == LocationId && pl.ProductId == item.ProductId);
+
+                if (stockRecord != null)
+                {
+                    stockRecord.Quantity -= discrepancy;
+                    stockRecord.LastUpdated = DateTime.UtcNow;
+
+                    var product = await context.Products.FindAsync(item.ProductId);
+                    context.Sales.Add(new Sale
+                    {
+                        ProductId = item.ProductId,
+                        LocationId = LocationId,
+                        QuantitySold = discrepancy,
+                        UnitPriceAtSale = product?.Price ?? 0,
+                        SaleDate = DateTime.UtcNow,
+                        IsManualAdjustment = true
+                    });
+                }
+                else
+                {
+                    Console.WriteLine($"[DEBUG] No stock found for Prod ID: {item.ProductId} at Loc ID: {LocationId}");
+                }
+            }
+        }
+
+        await context.SaveChangesAsync();
+        Navigation.NavigateTo("/inventory/stock");
+    }
+
+    private decimal TotalRevenue => ReconcileList.Sum(item => item.ActualSalesCount * item.UnitPrice);
+
+    public class SaleReconcileItem
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = "";
+        public decimal UnitPrice { get; set; }
+        public int SystemSalesCount { get; set; }
+        public int ActualSalesCount { get; set; }
+    }
 }
-
-
-
-  // This will automatically update whenever the user types in the "Actual Sales" boxes
-private decimal TotalRevenue => ReconcileList.Sum(item => item.ActualSalesCount * item.UnitPrice);
-
-public class SaleReconcileItem
-{
-    public int ProductId { get; set; }
-    public string ProductName { get; set; } = "";
-    public decimal UnitPrice { get; set; } // Make sure to add this!
-    public int SystemSalesCount { get; set; }
-    public int ActualSalesCount { get; set; }
-}
-
-
-}
-Use code with caution.
-Why this fixes it:
-C# needs to know what a SaleReconcileItem looks like before it can create a List of them. By adding that public class inside your code block, you're defining the "blueprint" for the items in your table.
-Try running dotnet build again. It should go through clean now!
-Once it builds, do you want to add the code that automatically calculates the SystemSalesCount by looking at your new Sales table?
 
 
 

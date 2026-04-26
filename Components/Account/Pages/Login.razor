@@ -12,6 +12,7 @@
 
 <PageTitle>Log in</PageTitle>
 
+<<<<<<< Updated upstream
 <h1>Log in</h1>
 <div class="row">
     <div class="col-lg-6">
@@ -63,6 +64,38 @@
         </section>
     </div>
 </div>
+=======
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4" Style="margin-top:1.5rem;">
+    <MudText Typo="Typo.h4">Log in</MudText>
+    <MudGrid GutterSize="3" Class="mt-3">
+        <MudItem xs="12" lg="6">
+            <MudPaper Elevation="1" Class="pa-4">
+                <StatusMessage Message="@errorMessage" />
+                <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+                    <DataAnnotationsValidator />
+                    <MudText Typo="Typo.h6">Use a local account to log in.</MudText>
+                    <MudDivider Class="my-3" />
+                    <ValidationSummary class="mud-text-error" role="alert" />
+                    <MudTextField @bind-Value="Input.Email" AutoComplete="username" Placeholder="name@example.com" Required="true" Label="Email" For="@(() => Input.Email)" FullWidth="true" />
+                    <MudTextField @bind-Value="Input.Password" InputType="InputType.Password" AutoComplete="current-password" Placeholder="password" Required="true" Label="Password" For="@(() => Input.Password)" FullWidth="true" Class="mt-3" />
+                    <MudCheckBox @bind-Checked="Input.RememberMe" Label="Remember me" Class="mt-2" />
+                    <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4">Log in</MudButton>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3"><a href="Account/ForgotPassword">Forgot your password?</a></MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary"><a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a></MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary"><a href="Account/ResendEmailConfirmation">Resend email confirmation</a></MudText>
+                </EditForm>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" lg="6">
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudText Typo="Typo.h6">Use another service to log in.</MudText>
+                <MudDivider Class="my-3" />
+                <ExternalLoginPicker />
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+>>>>>>> Stashed changes
 
 @code {
     private string? errorMessage;

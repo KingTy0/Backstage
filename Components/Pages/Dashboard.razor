@@ -20,6 +20,7 @@
 @* ── Page title appears in the browser tab ── *@
 <PageTitle>Dashboard - Puppet Fest Merch</PageTitle>
 
+<<<<<<< Updated upstream
 @* ── Greeting: shows the logged-in user's email/username ── *@
 <h1>Hello, @context.User.Identity?.Name!</h1>
 
@@ -100,6 +101,59 @@
         </div>
 >>>>>>> Stashed changes
 </div>
+=======
+<MudContainer MaxWidth="MaxWidth.False" Style="margin-top:1.5rem;">
+    <MudText Typo="Typo.h4">Hello, @UserName!</MudText>
+    <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-4">Welcome to the Puppet Festival Merchandise Management System.</MudText>
+
+    <MudGrid GutterSize="3">
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="1" Class="pa-4 text-center">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Today's Revenue</MudText>
+                <MudText Typo="Typo.h4" Class="mt-2">@TotalRevenue.ToString("C")</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Success"><MudIcon Icon="@Icons.Material.Filled.ShoppingCart" /> From recorded sales</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="1" Class="pa-4 text-center">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Inventory Shrinkage</MudText>
+                <MudText Typo="Typo.h4" Color="Color.Error" Class="mt-2">@ShrinkageCount</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Extra items sold via manual count</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="1" Class="pa-4 text-center">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Active Roles</MudText>
+                <MudStack Direction="Row" Wrap="Wrap.Wrap" Justify="Justify.Center" Class="mt-2">
+                    @foreach (var role in UserRoles)
+                    {
+                        <MudChip Color="Color.Info" Variant="Variant.Filled" Style="margin:0.25rem;">@role</MudChip>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Elevation="1" Class="pa-4 mt-4">
+        <MudText Typo="Typo.h6">Manual vs. System Sales (Today)</MudText>
+
+        @if (TotalUnitsSold > 0)
+        {
+            var systemPct = TotalUnitsSold == 0 ? 0 : (double)SystemSoldUnits / TotalUnitsSold * 100;
+            var manualPct = TotalUnitsSold == 0 ? 0 : (double)ShrinkageCount / TotalUnitsSold * 100;
+            <MudText Typo="Typo.subtitle2" Class="mt-3">System Sales: @SystemSoldUnits</MudText>
+            <MudProgressLinear Value="@systemPct" Color="Color.Primary" Class="mt-2" BufferValue="100" />
+            <MudText Typo="Typo.subtitle2" Class="mt-3">Manual Adjustments: @ShrinkageCount</MudText>
+            <MudProgressLinear Value="@manualPct" Color="Color.Warning" Class="mt-2" BufferValue="100" />
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-3">Blue represents system-recorded sales. Yellow represents reconciliation discrepancies.</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">No sales activity recorded today yet.</MudText>
+        }
+    </MudPaper>
+</MudContainer>
+>>>>>>> Stashed changes
 
 
 @code {
@@ -120,7 +174,6 @@
 =======
     private string UserName = "User";
     private List<string> UserRoles = new();
-    
     private decimal TotalRevenue;
     private int SystemSoldUnits;
     private int ShrinkageCount;
@@ -128,7 +181,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // 1. Handle Authentication (Replacement for HttpContext)
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -137,11 +189,11 @@
             UserName = user.Identity.Name ?? "User";
             foreach (var role in AppRoles.AllRoles)
             {
-                if (user.IsInRole(role)) UserRoles.Add(role);
+                if (user.IsInRole(role))
+                    UserRoles.Add(role);
             }
         }
 
-        // 2. Fetch Today's Analytics from the Sales Table
         using var context = await DbFactory.CreateDbContextAsync();
         var today = DateTime.UtcNow.Date;
 
@@ -149,17 +201,14 @@
             .Where(s => s.SaleDate >= today)
             .ToListAsync();
 
-        // Total $ made from real-time sales
         TotalRevenue = salesToday
             .Where(s => !s.IsManualAdjustment)
             .Sum(s => s.QuantitySold * s.UnitPriceAtSale);
 
-        // Count units sold via "Complete Sale" button
         SystemSoldUnits = salesToday
             .Where(s => !s.IsManualAdjustment)
             .Sum(s => s.QuantitySold);
 
-        // Count units added via "Reconciliation" (The Over/Under)
         ShrinkageCount = salesToday
             .Where(s => s.IsManualAdjustment)
             .Sum(s => s.QuantitySold);

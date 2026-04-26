@@ -20,11 +20,11 @@
 @attribute [Authorize(Roles = "Admin")]
 @rendermode InteractiveServer
 
-@* ── Inject the services we need ── *@
 @inject SqliteBackupService BackupService
 @inject BackupQueueService BackupQueue
 @inject IConfiguration Configuration
 
+<<<<<<< Updated upstream
 <pagetitle>Storage Admin</pagetitle>
 <h1>Storage Administration</h1>
 
@@ -47,17 +47,45 @@
                 Write-triggered backups also fire after each
                 database change.
             </int></p>
-        }
-        else
+=======
+<PageTitle>Storage Admin</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4">Storage Administration</MudText>
+
+    <MudPaper Elevation="1" Class="pa-4 mt-4">
+        <MudText Typo="Typo.h6">Backup Status</MudText>
+
+        @if (BackupService.IsEnabled)
         {
+            <MudText Typo="Typo.body1" Color="Color.Success" Class="mt-2">
+                <strong>Blob Storage backup is ENABLED</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
+                Automatic backups run every @(Configuration.GetValue<int>("Backup:IntervalMinutes", 5)) minutes.
+                Write-triggered backups also fire after each database change.
+            </MudText>
+>>>>>>> Stashed changes
+        }
+        @else
+        {
+<<<<<<< Updated upstream
             <div class="alert alert-warning">
 <strong>Blob Storage backup is DISABLED.</strong><br/>
                 Set <code>Backup:UseStorage</code> to <code>true</code>
                 and provide a <code>Backup:BlobConnectionString</code>
                 in configuration to enable.
             </div>
+=======
+            <MudAlert Severity="Severity.Warning" Class="mt-3">
+                <strong>Blob Storage backup is DISABLED.</strong><br />
+                Set <code>Backup:UseStorage</code> to <code>true</code> and provide a <code>Backup:BlobConnectionString</code> in configuration.
+            </MudAlert>
+>>>>>>> Stashed changes
         }
+    </MudPaper>
 
+<<<<<<< Updated upstream
     </div>
 </div>
 
@@ -83,22 +111,37 @@
                 <span class="spinner-border spinner-border-sm me-2">
 </span>
 <text>Backing up...</text>
-            }
-            else
+=======
+    <MudPaper Elevation="1" Class="pa-4 mt-4">
+        <MudText Typo="Typo.h6">Manual Backup</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="@RunBackup" Disabled="@(!BackupService.IsEnabled || isRunning)" Class="mt-3">
+            @if (isRunning)
             {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" Class="me-2" />
+                Backing up...
+>>>>>>> Stashed changes
+            }
+            @else
+            {
+<<<<<<< Updated upstream
                 <text>Backup Now</text>
             }
 
         </button>
 
+=======
+                Backup Now
+            }
+        </MudButton>
+>>>>>>> Stashed changes
 
         @if (!string.IsNullOrEmpty(resultMessage))
         {
-            <div class="alert @resultCssClass mt-3">
-                @resultMessage
-            </div>
+            <MudAlert Severity="@ResultSeverity" Dense="true" Class="mt-3">@resultMessage</MudAlert>
         }
+    </MudPaper>
 
+<<<<<<< Updated upstream
     </div>
 </div>
 
@@ -125,9 +168,23 @@
                 <span class="spinner-border spinner-border-sm me-2">
 </span>
 <text>Restoring...</text>
-            }
-            else
+=======
+    <MudPaper Elevation="1" Class="pa-4 mt-4">
+        <MudText Typo="Typo.h6">Restore from Latest Backup</MudText>
+        <MudAlert Severity="Severity.Error" Class="mt-3">
+            <strong>Caution:</strong> This will overwrite the current database with the most recent backup.
+            All active user sessions will be disrupted. An application restart is recommended after restoring.
+        </MudAlert>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" @onclick="@RunRestore" Disabled="@(!BackupService.IsEnabled || isRestoring)" Class="mt-2">
+            @if (isRestoring)
             {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Warning" Class="me-2" />
+                Restoring...
+>>>>>>> Stashed changes
+            }
+            @else
+            {
+<<<<<<< Updated upstream
                 <text>Restore Latest Backup</text>
 <<<<<<< Updated upstream
             }
@@ -139,13 +196,27 @@
 </div>
 >>>>>>> Stashed changes
 </div>
+=======
+                Restore Latest Backup
+            }
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+>>>>>>> Stashed changes
 
 @code {
-    // ── Component state ──
-    private bool isRunning; // True while a backup is in progress
-    private bool isRestoring; // True while a restore is in progress
+    private bool isRunning;
+    private bool isRestoring;
     private string resultMessage = "";
     private string resultCssClass = "";
+
+    private Severity ResultSeverity => resultCssClass switch
+    {
+        "alert-success" => Severity.Success,
+        "alert-warning" => Severity.Warning,
+        "alert-danger" => Severity.Error,
+        _ => Severity.Info
+    };
 
     /// <summary>
     /// Triggers a backup through the queue and waits for completion.

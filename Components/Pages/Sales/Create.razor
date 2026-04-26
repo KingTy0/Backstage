@@ -1,0 +1,182 @@
+@page "/sales/create"
+@using Microsoft.EntityFrameworkCore
+@using PuppetFestAPP.Web.Data
+@rendermode InteractiveServer
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4">Record a Sale</MudText>
+    <MudDivider Class="mb-4" />
+
+    <MudGrid GutterSize="3">
+        <MudItem xs="12" md="5">
+            <MudCard>
+                <MudCardContent>
+                    <MudSelect T="int" Label="Location" Value="SelectedLocationId" ValueChanged="@(async loc => { SelectedLocationId = loc; await LoadProducts(); })" ValueExpression="() => SelectedLocationId" FullWidth="true">
+                        <MudSelectItem T="int" Value="0">-- Select Location --</MudSelectItem>
+                        @foreach (var loc in Locations)
+                        {
+                            <MudSelectItem T="int" Value="@loc.Id">@loc.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="int" Label="Product" @bind-Value="SelectedProductId" Disabled="@(SelectedLocationId == 0)" FullWidth="true" Class="mt-4">
+                        <MudSelectItem T="int" Value="0">-- Select Product --</MudSelectItem>
+                        @foreach (var item in AvailableProducts)
+                        {
+                            <MudSelectItem T="int" Value="@item.ProductId">@item.ProductName (@item.StockAvailable in stock)</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudNumericField @bind-Value="SaleQuantity" Min="1" Label="Quantity to Sell" FullWidth="true" Class="mt-4" />
+
+                    @if (!string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error" Dense="true" Class="mt-4">@ErrorMessage</MudAlert>
+                    }
+
+                    <MudButton Type="Button" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4" OnClick="ProcessSale" Disabled="@(SelectedProductId == 0 || SaleQuantity <= 0)">Complete Sale</MudButton>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="7">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h6">Success Log</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudList Dense="true">
+                        @foreach (var log in SaleLogs)
+                        {
+                            <MudListItem>
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="me-2" />
+                                @log
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mt-4">
+        <MudText Typo="Typo.h6">Today's Sales History</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" Href="@($"/sales/reconcile/{SelectedLocationId}")" Disabled="@(SelectedLocationId == 0)">
+            Manual End of Day Entry
+        </MudButton>
+    </MudStack>
+
+    <MudCard Class="mt-3">
+        <MudTable Items="RecentSales" Dense="true" Hover="true" Class="mb-0">
+            <HeaderContent>
+                <MudTh>Time</MudTh>
+                <MudTh>Product</MudTh>
+                <MudTh>Qty</MudTh>
+                <MudTh>Location</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.SaleDate.ToLocalTime().ToString("t")</MudTd>
+                <MudTd>@context.Product.Name</MudTd>
+                <MudTd>@context.QuantitySold</MudTd>
+                <MudTd>@context.Location.Name</MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">No sales recorded yet today.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private int SelectedLocationId;
+    private int SelectedProductId;
+    private int SaleQuantity = 1;
+    private string? ErrorMessage;
+    
+    private List<Location> Locations = new();
+    private List<ProductStockDTO> AvailableProducts = new();
+    private List<string> SaleLogs = new();
+    private List<Sale> RecentSales = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        Locations = await context.Locations.OrderBy(l => l.Name).ToListAsync();
+        await LoadRecentSales(); // Load history on start
+    }
+
+    private async Task LoadRecentSales()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        var today = DateTime.UtcNow.Date;
+        
+        RecentSales = await context.Sales
+            .Include(s => s.Product)
+            .Include(s => s.Location)
+            .Where(s => s.SaleDate >= today && !s.IsManualAdjustment)
+            .OrderByDescending(s => s.SaleDate)
+            .Take(10)
+            .ToListAsync();
+    }
+
+    private async Task LoadProducts()
+    {
+        if (SelectedLocationId == 0) return;
+
+        using var context = await DbFactory.CreateDbContextAsync();
+        AvailableProducts = await context.ProductLocations
+            .Where(pl => pl.LocationId == SelectedLocationId && pl.Quantity > 0)
+            .Select(pl => new ProductStockDTO
+            {
+                ProductId = pl.ProductId,
+                ProductName = pl.Product.Name,
+                StockAvailable = pl.Quantity
+            }).ToListAsync();
+    }
+
+    private async Task ProcessSale()
+    {
+        ErrorMessage = null;
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        var stockRecord = await context.ProductLocations
+            .FirstOrDefaultAsync(pl => pl.LocationId == SelectedLocationId && pl.ProductId == SelectedProductId);
+
+        if (stockRecord == null || stockRecord.Quantity < SaleQuantity)
+        {
+            ErrorMessage = "Insufficient stock!";
+            return;
+        }
+
+        stockRecord.Quantity -= SaleQuantity;
+        stockRecord.LastUpdated = DateTime.UtcNow;
+
+        var product = await context.Products.FindAsync(SelectedProductId);
+        context.Sales.Add(new Sale
+        {
+            ProductId = SelectedProductId,
+            LocationId = SelectedLocationId,
+            QuantitySold = SaleQuantity,
+            UnitPriceAtSale = product?.Price ?? 0,
+            SaleDate = DateTime.UtcNow,
+            IsManualAdjustment = false
+        });
+
+        await context.SaveChangesAsync();
+
+        SaleLogs.Insert(0, $"{DateTime.Now.ToShortTimeString()}: Sold {SaleQuantity}x {product?.Name}");
+        
+        SaleQuantity = 1;
+        await LoadProducts(); 
+        await LoadRecentSales(); // NEW: Update the history table immediately!
+    }
+
+    public class ProductStockDTO
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = "";
+        public int StockAvailable { get; set; }
+    }
+}

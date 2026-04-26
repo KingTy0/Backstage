@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>End of Day Adjustment: @LocationName</h2>
@@ -70,6 +71,54 @@
         </tbody>
 </table>
 
+=======
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+        <MudText Typo="Typo.h4">End of Day Adjustment: @LocationName</MudText>
+        <MudButton Type="Button" Variant="Variant.Filled" Color="Color.Success" OnClick="SaveAdjustments">Save & Reconcile</MudButton>
+    </MudStack>
+
+    <MudAlert Severity="Severity.Info" Dense="true">Use this to match digital stock with physical counts. Entering <strong>0</strong> will remove the item from this location.</MudAlert>
+
+    <MudTable Items="AdjustmentList" Dense="true" Hover="true" Class="mt-4">
+        <HeaderContent>
+            <MudTh>Product</MudTh>
+            <MudTh Align="Align.Center">Current System</MudTh>
+            <MudTh Align="Align.Center">Actual Physical</MudTh>
+            <MudTh Align="Align.Center">Discrepancy</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <div>
+                    <strong>@context.ProductName</strong><br />
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.VariantDetails</MudText>
+                </div>
+            </MudTd>
+            <MudTd Align="Align.Center">@context.SystemQuantity</MudTd>
+            <MudTd Align="Align.Center">
+                <MudNumericField @bind-Value="context.NewQuantity" Min="0" Size="Size.Small" Class="mud-width-full" />
+            </MudTd>
+            <MudTd Align="Align.Center">
+                @{
+                    var diff = context.NewQuantity - context.SystemQuantity;
+                    if (diff == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">-</MudText>
+                    }
+                    else if (diff > 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Success">+@diff</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Error">@diff</MudText>
+                    }
+                }
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+>>>>>>> Stashed changes
 
 @code {
     [Parameter] public int LocationId { get; set; }
