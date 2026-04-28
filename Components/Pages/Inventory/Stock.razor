@@ -19,8 +19,7 @@
                     @locGroup.Key.Name (@((LocationType)locGroup.Key.Type)!) - Total: @locGroup.Sum(x => x.Quantity) items
                 </h3>
 
-                @* locGroup.Key is the Location object, so we grab its ID for the link *@
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@("/inventory/adjust/" + locGroup.Key.Id)"><i class="bi bi-pencil-square"></i> End of Day Adjustment</MudButton>
+           
             </div>
 
             <div class="card-body p-0">

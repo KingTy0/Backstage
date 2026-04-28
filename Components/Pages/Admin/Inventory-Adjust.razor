@@ -1,0 +1,185 @@
+@page "/admin/inventory-adjust"
+@using Microsoft.EntityFrameworkCore
+@using PuppetFestAPP.Web.Data
+@rendermode InteractiveServer
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+@* @attribute [Authorize(Roles = "Admin")] ONCE LOGIN IS FIXED ENSURE THIS GETS UNCOMMENTED AND THE LINK
+WITHIN THE NAVMENU GETS PUSHED INTO THE ADMIN ONLY SECTION*@
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Admin: Universal Inventory Adjustment</h2>
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Success" 
+                   @onclick="SaveAdjustments" 
+                   Disabled="@(SelectedLocationId == 0 || AdjustmentList == null)">
+            <i class="bi bi-shield-check me-2"></i> Commit Changes
+        </MudButton>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold">Select Location to Manage</label>
+                    <select class="form-select form-select-lg" @bind="SelectedLocationId" @bind:after="LoadLocationStock">
+                        <option value="0">-- Select Location (Vans & Stores) --</option>
+                        @foreach (var loc in Locations)
+                        {
+                            <option value="@loc.Id">@loc.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    @if (SelectedLocationId > 0)
+                    {
+                        <div class="alert alert-warning m-0 py-2 small">
+                            <i class="bi bi-exclamation-triangle"></i> You are editing live stock for <strong>@SelectedLocationName</strong>.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (SelectedLocationId > 0)
+    {
+        @if (AdjustmentList == null)
+        {
+            <p><em>Loading products...</em></p>
+        }
+        else
+        {
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-center">System Stock</th>
+                        <th class="text-center">New Total</th>
+                        <th class="text-center">Adjustment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in AdjustmentList)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@item.ProductName</strong><br />
+                                <small class="text-muted">@item.VariantDetails</small>
+                            </td>
+                            <td class="text-center">@item.SystemQuantity</td>
+                            <td class="text-center">
+                                <MudNumericField @bind-Value="item.NewQuantity" 
+                                                 @bind:event="oninput" 
+                                                 style="width: 100px;" />
+                            </td>
+                            <td class="text-center">
+                                @{
+                                    var diff = item.NewQuantity - item.SystemQuantity;
+                                    if (diff == 0) { <span class="text-muted">-</span> }
+                                    else if (diff > 0) { <span class="text-success">+@diff</span> }
+                                    else { <span class="text-danger">@diff</span> }
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5 border rounded bg-light">
+            <i class="bi bi-shop h1 text-muted"></i>
+            <p class="text-muted">Select a location above to view and adjust inventory.</p>
+        </div>
+    }
+</div>
+
+@code {
+    private int SelectedLocationId;
+    private string SelectedLocationName = "";
+    private List<Location> Locations = new();
+    private List<AdjustmentItem> AdjustmentList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        Locations = await context.Locations.OrderBy(l => l.Name).ToListAsync();
+    }
+
+    private async Task LoadLocationStock()
+    {
+        if (SelectedLocationId == 0)
+        {
+            AdjustmentList.Clear();
+            return;
+        }
+
+        using var context = await DbFactory.CreateDbContextAsync();
+        var location = Locations.FirstOrDefault(l => l.Id == SelectedLocationId);
+        SelectedLocationName = location?.Name ?? "";
+
+        var products = await context.Products.OrderBy(p => p.Name).ToListAsync();
+        var currentStock = await context.ProductLocations
+            .Where(pl => pl.LocationId == SelectedLocationId)
+            .ToListAsync();
+
+        AdjustmentList = products.Select(p => new AdjustmentItem
+        {
+            ProductId = p.Id,
+            ProductName = p.Name,
+            VariantDetails = $"{p.Size} / {p.Color}",
+            SystemQuantity = currentStock.FirstOrDefault(s => s.ProductId == p.Id)?.Quantity ?? 0,
+            NewQuantity = currentStock.FirstOrDefault(s => s.ProductId == p.Id)?.Quantity ?? 0
+        }).ToList();
+    }
+
+    private async Task SaveAdjustments()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        foreach (var item in AdjustmentList)
+        {
+            var stockRecord = await context.ProductLocations
+                .FirstOrDefaultAsync(pl => pl.LocationId == SelectedLocationId && pl.ProductId == item.ProductId);
+
+            if (item.NewQuantity == 0 && stockRecord != null)
+            {
+                context.ProductLocations.Remove(stockRecord);
+            }
+            else if (item.NewQuantity != item.SystemQuantity)
+            {
+                if (stockRecord != null)
+                {
+                    stockRecord.Quantity = item.NewQuantity;
+                    stockRecord.LastUpdated = DateTime.UtcNow;
+                }
+                else if (item.NewQuantity > 0)
+                {
+                    context.ProductLocations.Add(new ProductLocation
+                    {
+                        LocationId = SelectedLocationId,
+                        ProductId = item.ProductId,
+                        Quantity = item.NewQuantity,
+                        LastUpdated = DateTime.UtcNow
+                    });
+                }
+            }
+        }
+
+        await context.SaveChangesAsync();
+        await LoadLocationStock();
+    }
+
+    public class AdjustmentItem
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = "";
+        public string VariantDetails { get; set; } = "";
+        public int SystemQuantity { get; set; }
+        public int NewQuantity { get; set; }
+    }
+}
