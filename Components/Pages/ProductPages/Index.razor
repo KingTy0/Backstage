@@ -1,94 +1,92 @@
 @page "/Products"
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.QuickGrid
+@using QG = Microsoft.AspNetCore.Components.QuickGrid
 @using PuppetFestAPP.Web.Data
-@using Image = PuppetFestAPP.Web.Models.Image
 @using PuppetFestAPP.Web.Models
 @rendermode InteractiveServer
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 
-<pagetitle>Product Management</pagetitle>
-<h1>Product Management</h1>
-<p>
-<<<<<<< Updated upstream
-    <a href="products/create" class="btn btn-primary">Create New Master Product</a>
-=======
-<MudButton color="Color.Primary" href="Products/create" variant="Variant.Filled">Create New Master Product</MudButton>
->>>>>>> Stashed changes
-</p>
+<PageTitle>Product Management</PageTitle>
 
-@* Search Bar *@
-<div class="mb-3 mt-3">
-<<<<<<< Updated upstream
-    <input type="search" class="form-control" placeholder="Search by product name..." 
-           @bind="searchTerm" @bind:event="oninput" />
-=======
-<MudTextfield __at__bind-value="searchTerm" __at__bind:event="oninput" inputtype="InputType.Search" placeholder="Search by Product name..."></MudTextfield>
->>>>>>> Stashed changes
-</div>
-<quickgrid items="FilteredProducts" pagination="pagination">
-    @* Image Column *@
-   <templatecolumn context="prod" title="Image">
-    @* We use 'prod' (lowercase) because the grid defined it as the 'Context' *@
-    @if (prod.Image != null && !string.IsNullOrEmpty(prod.Image.FileName))
-    {
-        <img class="rounded shadow-sm" src="/Images/Products/@prod.Image.FileName" style="width: 50px; height: 50px; object-fit: cover;"/>
-    }
-    else
-    {
-        <span>No Image</span>
-    }
-</TemplateColumn>
-<propertycolumn property="@(p => p.Name)" sortable="true" title="Product Name"></PropertyColumn>
-<templatecolumn context="prod" sortable="true" title="Category">
-        @prod.Category?.Name
-    </TemplateColumn>
-<<<<<<< Updated upstream
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+        <MudText Typo="Typo.h4">Product Management</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" href="Products/create">
+            Create New Master Product
+        </MudButton>
+    </MudStack>
 
-    <PropertyColumn Property="@(p => p.Price)" Format="C" Sortable="true" />
-    
-    <TemplateColumn Context="prod" Title="Actions">
-        <div class="btn-group">
-            <a href="@($"/products/edit/{prod.Id}")" class="btn btn-sm btn-outline-primary">Edit</a>
-            <a href="@($"/products/details/{prod.Id}")" class="btn btn-sm btn-info text-white">Manage Inventory</a>
-            <a href="@($"/products/delete/{prod.Id}")" class="btn btn-sm btn-danger">Delete</a>
+    <div class="mb-6">
+        <MudTextField @bind-Value="searchTerm" 
+                      Placeholder="Search by product name..." 
+                      Adornment="Adornment.Start" 
+                      AdornmentIcon="@Icons.Material.Filled.Search" 
+                      Immediate="true" 
+                      Variant="Variant.Outlined" />
+    </div>
+
+    <MudPaper Elevation="1" Class="pa-4">
+        <QG.QuickGrid Items="FilteredProducts" Pagination="pagination">
+            @* Image Column *@
+            <QG.TemplateColumn Title="Image" Context="prod">
+                @if (prod.Image != null && !string.IsNullOrEmpty(prod.Image.FileName))
+                {
+                    <img class="rounded shadow-sm" src="/Images/Products/@prod.Image.FileName" 
+                         style="width: 50px; height: 50px; object-fit: cover;"/>
+                }
+                else
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">No Image</MudText>
+                }
+            </QG.TemplateColumn>
+
+            <QG.PropertyColumn Property="@(p => p.Name)" Sortable="true" Title="Product Name" />
+            
+            <QG.TemplateColumn Title="Category" Sortable="true" Context="prod">
+                @prod.Category?.Name
+            </QG.TemplateColumn>
+
+            <QG.PropertyColumn Property="@(p => p.Price)" Format="C" Sortable="true" Title="Price" />
+
+            <QG.TemplateColumn Title="Actions" Context="prod">
+                <MudStack Row="true" Spacing="1">
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" 
+                               href="@($"/products/edit/{prod.Id}")">Edit</MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Info" 
+                               href="@($"/products/details/{prod.Id}")">Manage</MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Error" 
+                               href="@($"/products/delete/{prod.Id}")">Delete</MudButton>
+                </MudStack>
+            </QG.TemplateColumn>
+        </QG.QuickGrid>
+
+        <div class="mt-4">
+            <QG.Paginator State="pagination" />
         </div>
-    </TemplateColumn>
-=======
-<propertycolumn format="C" property="@(p => p.Price)" sortable="true"></PropertyColumn>
-<templatecolumn context="prod" title="Actions">
-<div class="btn-group">
-<MudButton "="" +="" color="Color.Primary" edit="" href="@(" prod.id)"="" Products="" variant="Variant.Filled">Edit</MudButton>
-<MudButton "="" +="" color="Color.Primary" details="" href="@(" prod.id)"="" Products="" variant="Variant.Filled">Manage Inventory</MudButton>
-<MudButton "="" +="" color="Color.Error" delete="" href="@(" prod.id)"="" Products="" variant="Variant.Filled">Delete</MudButton>
-</div>
-</TemplateColumn>
->>>>>>> Stashed changes
-</QuickGrid>
-<paginator state="pagination"></Paginator>
+    </MudPaper>
+</MudContainer>
 
 @code {
     private IQueryable<Product>? Products;
     private string searchTerm = "";
 
-    private IQueryable<Product> FilteredProducts =>
-        string.IsNullOrWhiteSpace(searchTerm)
-            ? Products ?? Enumerable.Empty<Product>().AsQueryable()
+    private IQueryable<Product> FilteredProducts => 
+        string.IsNullOrWhiteSpace(searchTerm) 
+            ? Products ?? Enumerable.Empty<Product>().AsQueryable() 
             : (Products ?? Enumerable.Empty<Product>().AsQueryable())
                 .Where(p => p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
+    QG.PaginationState pagination = new QG.PaginationState { ItemsPerPage = 20 };
 
     protected override async Task OnInitializedAsync()
     {
         using var context = await DbFactory.CreateDbContextAsync();
-
         var data = await context.Products
             .Include(p => p.Category)
-            .Include(p => p.Image) 
+            .Include(p => p.Image)
             .Where(p => p.ParentProductId == null)
             .ToListAsync();
-
+            
         Products = data.AsQueryable();
     }
-}</Product></Product></Product></Product></ApplicationDbContext>
+}

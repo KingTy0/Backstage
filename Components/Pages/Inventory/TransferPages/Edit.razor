@@ -5,113 +5,72 @@
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager Navigation
 
-<pagetitle>Edit Transfer</pagetitle>
+<PageTitle>Edit Transfer</PageTitle>
 
 @if (TransferBox == null)
 {
-    <div class="alert alert-warning">Loading...</div>
+    <MudAlert Severity="Severity.Info">Loading Transfer Data...</MudAlert>
 }
 else
 {
-<<<<<<< Updated upstream
-    <div class="container mt-4">
-        <h1>Edit Transfer #@TransferBox.Id</h1>
-        
-        <EditForm Model="Form" OnValidSubmit="UpdateTransfer" FormName="editTransfer" Enhance>
+    <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Edit Transfer #@TransferBox.Id</MudText>
+
+        <EditForm Model="Form" OnValidSubmit="UpdateTransfer">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" />
 
-            <div class="row mb-3">
-                <div class="col-md-5">
-                    <label class="form-label">From Location</label>
-                    <InputSelect @bind-Value="Form.FromLocationId" class="form-control" disabled="@IsReadOnly">
-=======
-    <div class="container" class="mt-4">
-<h1>Edit Transfer #@TransferBox.Id</h1>
-<editform enhance="" formname="editTransfer" model="Form" onvalidsubmit="UpdateTransfer">
-<dataannotationsvalidator></dataannotationsvalidator>
-<validationsummary class="mud-text-error"></validationsummary>
-<div class="row" class="mb-3">
-<div class="class="col-md-5"">
-<label class="form-label">From Location</label>
-<inputselect __at__bind-value="Form.FromLocationId" disabled="@IsReadOnly">
->>>>>>> Stashed changes
-                        @foreach (var loc in Locations.Where(l => l.IsActive))
-                        {
-                            <option value="@loc.Id">@loc.Name (@loc.Type)</option>
-                        }
-<<<<<<< Updated upstream
-                    </InputSelect>
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label">To Location</label>
-                    <InputSelect @bind-Value="Form.ToLocationId" class="form-control" disabled="@IsReadOnly">
-=======
-                    </inputselect>
-</div></div></editform></div>
-<div class="class="col-md-5"">
-<label class="form-label">To Location</label>
-<inputselect __at__bind-value="Form.ToLocationId" disabled="@IsReadOnly">
->>>>>>> Stashed changes
-                        @foreach (var loc in Locations.Where(l => l.IsActive))
-                        {
-                            <option value="@loc.Id">@loc.Name (@loc.Type)</option>
-                        }
-<<<<<<< Updated upstream
-                    </InputSelect>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="button" class="btn btn-outline-secondary w-100" @onclick="ToggleEdit">
-                        @(IsReadOnly ? "Edit" : "Cancel")
-                    </button>
-                </div>
-            </div>
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" md="5">
+                        <MudSelect T="int" Label="From Location" @bind-Value="Form.FromLocationId" Disabled="@IsReadOnly" Variant="Variant.Outlined">
+                            @foreach (var loc in Locations)
+                            {
+                                <MudSelectItem Value="@loc.Id">@loc.Name (@loc.Type)</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
 
-            <div class="mb-3">
-                <label class="form-label">Notes</label>
-                <InputTextArea @bind-Value="Form.Notes" class="form-control" rows="3" disabled="@IsReadOnly" />
-            </div>
-=======
-                    </inputselect>
-</div>
-<div class="class="col-md-2"" class="d-flex align-items-end">
-<MudButton __at__onclick="ToggleEdit" color="Color.Secondary" fullwidth="true" type="Button" variant="Variant.Outlined">@(IsReadOnly ? "Edit" : "Cancel")</MudButton>
-</div>
-<div class="mb-3">
-<label class="form-label">Notes</label>
-<MudTextfield __at__bind-value="Form.Notes" disabled="@IsReadOnly" lines="3" textarea="true"></MudTextfield>
-</div>
->>>>>>> Stashed changes
+                    <MudItem xs="12" md="5">
+                        <MudSelect T="int" Label="To Location" @bind-Value="Form.ToLocationId" Disabled="@IsReadOnly" Variant="Variant.Outlined">
+                            @foreach (var loc in Locations)
+                            {
+                                <MudSelectItem Value="@loc.Id">@loc.Name (@loc.Type)</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
 
-            @if (!IsReadOnly)
-            {
-                <div class="alert alert-warning">
-<strong>Warning:</strong> Editing transfers will adjust current stock levels.
-                </div>
-            }
+                    <MudItem xs="12" md="2" Class="d-flex align-center">
+                        <MudButton OnClick="ToggleEdit" Color="Color.Secondary" FullWidth="true" Variant="Variant.Outlined">
+                            @(IsReadOnly ? "Edit" : "Cancel")
+                        </MudButton>
+                    </MudItem>
 
-            <div class="mt-4">
-                @if (IsReadOnly)
+                    <MudItem xs="12">
+                        <MudTextField Label="Notes" @bind-Value="Form.Notes" Lines="3" Disabled="@IsReadOnly" Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+
+                @if (!IsReadOnly)
                 {
-<<<<<<< Updated upstream
-                    <a href="/inventory/transfers" class="btn btn-secondary">Back</a>
+                    <MudAlert Severity="Severity.Warning" Class="mt-4">
+                        <strong>Warning:</strong> Editing locations will automatically adjust current stock levels.
+                    </MudAlert>
                 }
-                else
-                {
-                    <button type="submit" class="btn btn-success">Save Changes</button>
-                    <a href="/inventory/transfer/details/@Id" class="btn btn-secondary">Cancel</a>
-=======
-                    <MudButton color="Color.Secondary" href="/inventory/transfers" variant="Variant.Filled">Back</MudButton>
-                }
-                else
-                {
-                    <MudButton color="Color.Success" type="Submit" variant="Variant.Filled">Save Changes</MudButton>
-<MudButton "="" +="" color="Color.Secondary" details="" href="@(" id)"="" inventory="" transfer="" variant="Variant.Filled">Cancel</MudButton>
->>>>>>> Stashed changes
-                }
-            </div>
 
-
+                <MudStack Row="true" Class="mt-6" Spacing="2">
+                    @if (IsReadOnly)
+                    {
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/inventory/stock">Back</MudButton>
+                    }
+                    else
+                    {
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success">Save Changes</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="ToggleEdit">Cancel</MudButton>
+                    }
+                </MudStack>
+            </MudPaper>
+        </EditForm>
+    </MudContainer>
 }
 
 @code {
@@ -120,8 +79,8 @@ else
     private List<Location> Locations = new();
     private bool IsReadOnly = true;
 
-    [SupplyParameterFromForm]
-    private TransferEditFormModel? Form { get; set; }
+    // Manual property instead of [SupplyParameterFromForm] to avoid the "double binding" crash
+    private TransferEditFormModel Form { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -134,7 +93,7 @@ else
 
         if (TransferBox == null)
         {
-            Navigation.NavigateTo("/inventory/transfers");
+            Navigation.NavigateTo("/inventory/stock");
             return;
         }
 
@@ -153,38 +112,41 @@ else
         using var context = await DbFactory.CreateDbContextAsync();
         var box = await context.StockTransferBoxes.Include(b => b.Items).FirstOrDefaultAsync(b => b.Id == Id);
         
-        if (box == null || box.IsDelivered) return; // Cannot edit delivered boxes
+        if (box == null || box.IsDelivered) return;
 
         using var transaction = await context.Database.BeginTransactionAsync();
-        try {
-            // Handle Location Change
-            if (box.FromLocationId != Form.FromLocationId) {
-                foreach (var item in box.Items) {
-                    // 1. Refund the OLD Location
+        try
+        {
+            // Stock Logic: If FromLocation changed, move items back and forth
+            if (box.FromLocationId != Form.FromLocationId)
+            {
+                foreach (var item in box.Items)
+                {
+                    // 1. Put items back in the OLD source
                     var oldStock = await context.ProductLocations.FirstOrDefaultAsync(pl => pl.LocationId == box.FromLocationId && pl.ProductId == item.ProductId);
-                    if (oldStock == null) {
-                        context.ProductLocations.Add(new ProductLocation { LocationId = box.FromLocationId, ProductId = item.ProductId, Quantity = item.Quantity });
-                    } else {
-                        oldStock.Quantity += item.Quantity;
-                    }
+                    if (oldStock != null) oldStock.Quantity += item.Quantity;
 
-                    
+                    // 2. Take items out of the NEW source
                     var newStock = await context.ProductLocations.FirstOrDefaultAsync(pl => pl.LocationId == Form.FromLocationId && pl.ProductId == item.ProductId);
-                    if (newStock == null || newStock.Quantity < item.Quantity) {
-                        throw new Exception($"New Location doesn't have enough {item.ProductId}!");
-                    }
+                    if (newStock == null || newStock.Quantity < item.Quantity)
+                        throw new Exception("New source location does not have enough stock.");
+                    
                     newStock.Quantity -= item.Quantity;
                 }
                 box.FromLocationId = Form.FromLocationId;
             }
-            
+
             box.ToLocationId = Form.ToLocationId;
             box.Notes = Form.Notes;
+
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
-        } catch (Exception ex) {
+            IsReadOnly = true;
+        }
+        catch (Exception ex)
+        {
             await transaction.RollbackAsync();
-            // Show error to user
+            // In a real app, you'd show a snackbar or alert here with ex.Message
         }
     }
 
@@ -194,4 +156,4 @@ else
         public int ToLocationId { get; set; }
         public string? Notes { get; set; }
     }
-}</Location></ApplicationDbContext>
+}

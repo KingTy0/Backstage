@@ -6,76 +6,58 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 
-<pagetitle>Locations</pagetitle>
-<h1>Locations Management</h1>
-<p>
-<<<<<<< Updated upstream
-    <a href="/locations/create" class="btn btn-primary">Create New Location</a>
-=======
-<MudButton color="Color.Primary" href="/Locations/create" variant="Variant.Filled">Create New Location</MudButton>
->>>>>>> Stashed changes
-</p>
+<PageTitle>Locations</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Locations Management</MudText>
+
+<MudButton Color="Color.Primary" Variant="Variant.Filled" href="/Locations/create" Class="mb-4">
+    Create New Location
+</MudButton>
 
 @if (Locations == null)
 {
-    <div class="alert alert-info">Loading...</div>
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
 }
 else
 {
-    <div class="mb-3">
-<<<<<<< Updated upstream
-        <input type="search" class="form-control" placeholder="Search by name..." 
-               @bind="searchTerm" @bind:event="oninput" />
+    <div class="mb-4">
+        <MudTextField @bind-Value="searchTerm" 
+                      Placeholder="Search by name..." 
+                      Adornment="Adornment.Start" 
+                      AdornmentIcon="@Icons.Material.Filled.Search" 
+                      Immediate="true" />
     </div>
 
-    <QuickGrid Items="@((IQueryable<Location>)FilteredLocations.AsQueryable())" TGridItem="Location" Pagination="pagination">
+    <QuickGrid Items="@FilteredLocations.AsQueryable()" Pagination="pagination">
         <PropertyColumn Property="@(l => l.Name)" Sortable="true" Title="Name" />
         <PropertyColumn Property="@(l => l.Address)" Sortable="true" Title="Address" />
+        
         <TemplateColumn Title="Type" Context="loc">
-            <span class="badge @(loc.Type == LocationType.Van ? "bg-warning text-dark" : "bg-info")">
+            <MudChip T="string" Color="@(loc.Type == LocationType.Van ? Color.Warning : Color.Info)">
                 @loc.Type
-            </span>
+            </MudChip>
         </TemplateColumn>
+
         <PropertyColumn Property="@(l => l.IsActive)" Title="Active" />
-        <TemplateColumn Context="loc" Title="Actions">
-            <div class="btn-group">
-                <a href="@($"/locations/edit/{loc.Id}")" class="btn btn-sm btn-outline-primary">Edit</a>
-                <a href="@($"/locations/delete/{loc.Id}")" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete?')">Delete</a>
-            </div>
+
+        <TemplateColumn Title="Actions" Context="loc">
+            <MudStack Row="true">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" href="@($"/locations/edit/{loc.Id}")">Edit</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" href="@($"/locations/delete/{loc.Id}")">Delete</MudButton>
+            </MudStack>
         </TemplateColumn>
     </QuickGrid>
 
     <Paginator State="pagination" />
-=======
-<MudTextfield __at__bind-value="searchTerm" __at__bind:event="oninput" inputtype="InputType.Search" placeholder="Search by name..."></MudTextfield>
-</div>
-<quickgrid items="@((IQueryable<Location>)FilteredLocations.AsQueryable())" pagination="pagination" tgriditem="Location">
-<propertycolumn property="@(l => l.Name)" sortable="true" title="Name"></PropertyColumn>
-<propertycolumn property="@(l => l.Address)" sortable="true" title="Address"></PropertyColumn>
-<templatecolumn context="loc" title="Type">
-<span "bg-info")"="" :="" bg-warning="" class="badge @(loc.Type == LocationType.Van ?" text-dark"="">
-                @loc.Type
-            </span>
-</TemplateColumn>
-<propertycolumn property="@(l => l.IsActive)" title="Active"></PropertyColumn>
-<templatecolumn context="loc" title="Actions">
-<div class="btn-group">
-<MudButton "="" +="" color="Color.Primary" edit="" href="@(" loc.id)"="" Locations="" variant="Variant.Filled">Edit</MudButton>
-<MudButton "="" +="" color="Color.Primary" delete="" href="@(" loc.id)"="" Locations="" variant="Variant.Filled">Delete</MudButton>
-</div>
-</TemplateColumn>
-</QuickGrid>
-<paginator state="pagination"></Paginator>
->>>>>>> Stashed changes
 }
 
 @code {
     private List<Location>? Locations;
     private string searchTerm = "";
 
-    private IEnumerable<Location> FilteredLocations =>
-        string.IsNullOrWhiteSpace(searchTerm)
-            ? Locations ?? Enumerable.Empty<Location>()
+    private IEnumerable<Location> FilteredLocations => 
+        string.IsNullOrWhiteSpace(searchTerm) 
+            ? Locations ?? Enumerable.Empty<Location>() 
             : (Locations ?? Enumerable.Empty<Location>())
                 .Where(l => l.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
@@ -86,4 +68,4 @@ else
         using var context = await DbFactory.CreateDbContextAsync();
         Locations = await context.Locations.ToListAsync();
     }
-}</Location></Location></Location></Location></ApplicationDbContext>
+}

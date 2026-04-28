@@ -5,82 +5,21 @@
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager Navigation
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>End of Day Adjustment: @LocationName</h2>
-        <button class="btn btn-success" @onclick="SaveAdjustments">
-            <i class="bi bi-check-lg"></i> Save & Reconcile
-        </button>
-=======
-<div class="container" class="mt-4">
-<div class="d-flex justify-content-between align-items-center mb-4">
-<h2>End of Day Adjustment: @LocationName</h2>
-<MudButton __at__onclick="SaveAdjustments" color="Color.Success" type="Submit" variant="Variant.Filled"><i class="bi bi-check-lg"></i> Save & Reconcile</MudButton>
-</div></div>
-<div class="alert alert-info py-2">
-<i class="bi bi-info-circle"></i> Use this to match digital stock with physical counts. Entering <strong>0</strong> will remove the item from this Location.
->>>>>>> Stashed changes
-    </div>
-<table class="table table-hover align-middle">
-<thead class="table-dark">
-<tr>
-<th>Product</th>
-<th class="text-center">Current System</th>
-<th class="text-center">Actual Physical</th>
-<th class="text-center">Discrepancy</th>
-</tr>
-</thead>
-<tbody>
-            @foreach (var item in AdjustmentList)
-            {
-                <tr>
-<<<<<<< Updated upstream
-                    <td>
-                        <strong>@item.ProductName</strong><br/>
-                        <small class="text-muted">@item.VariantDetails</small>
-                    </td>
-                    <td class="text-center">@item.SystemQuantity</td>
-                    <td class="text-center">
-                        <input type="number" class="form-control form-control-sm mx-auto" 
-                               @bind="item.NewQuantity" @bind:event="oninput" 
-                               style="width: 80px;" />
-                    </td>
-                    <td class="text-center">
-=======
-<td>
-<strong>@item.ProductName</strong><br/>
-<small class="text-muted">@item.VariantDetails</small>
-</td>
-<td class="text-center">@item.SystemQuantity</td>
-<td class="text-center">
-<MudNumericfield __at__bind-value="item.NewQuantity" __at__bind:event="oninput" style="width: 80px;"></MudNumericfield>
-</td>
-<td class="text-center">
->>>>>>> Stashed changes
-                        @{
-                            var diff = item.NewQuantity - item.SystemQuantity;
-                            if (diff == 0) { <span class="text-muted">-</span> }
-                            else if (diff > 0) { <span class="text-success">+@diff</span> }
-                            else { <span class="text-danger">@diff</span> }
-                        }
-                    </td>
-</tr>
-            }
-        </tbody>
-</table>
+<PageTitle>End of Day Adjustment: @LocationName</PageTitle>
 
-=======
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
         <MudText Typo="Typo.h4">End of Day Adjustment: @LocationName</MudText>
-        <MudButton Type="Button" Variant="Variant.Filled" Color="Color.Success" OnClick="SaveAdjustments">Save & Reconcile</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="SaveAdjustments">
+            Save & Reconcile
+        </MudButton>
     </MudStack>
 
-    <MudAlert Severity="Severity.Info" Dense="true">Use this to match digital stock with physical counts. Entering <strong>0</strong> will remove the item from this location.</MudAlert>
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">
+        Use this to match digital stock with physical counts. Entering <strong>0</strong> will remove the item from this location.
+    </MudAlert>
 
-    <MudTable Items="AdjustmentList" Dense="true" Hover="true" Class="mt-4">
+    <MudTable Items="AdjustmentList" Dense="true" Hover="true">
         <HeaderContent>
             <MudTh>Product</MudTh>
             <MudTh Align="Align.Center">Current System</MudTh>
@@ -96,49 +35,42 @@
             </MudTd>
             <MudTd Align="Align.Center">@context.SystemQuantity</MudTd>
             <MudTd Align="Align.Center">
-                <MudNumericField @bind-Value="context.NewQuantity" Min="0" Size="Size.Small" Class="mud-width-full" />
+                <MudNumericField @bind-Value="context.NewQuantity" Min="0" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 100px;" />
             </MudTd>
             <MudTd Align="Align.Center">
                 @{
                     var diff = context.NewQuantity - context.SystemQuantity;
-                    if (diff == 0)
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">-</MudText>
-                    }
-                    else if (diff > 0)
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Success">+@diff</MudText>
-                    }
-                    else
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Error">@diff</MudText>
-                    }
+                    if (diff == 0) { <MudText Typo="Typo.body2" Color="Color.Secondary">-</MudText> }
+                    else if (diff > 0) { <MudText Typo="Typo.body2" Color="Color.Success">+@diff</MudText> }
+                    else { <MudText Typo="Typo.body2" Color="Color.Error">@diff</MudText> }
                 }
             </MudTd>
         </RowTemplate>
     </MudTable>
 </MudContainer>
->>>>>>> Stashed changes
 
 @code {
     [Parameter] public int LocationId { get; set; }
     private string LocationName = "";
-    private List<adjustmentitem> AdjustmentList = new();
+    private List<AdjustmentItem> AdjustmentList = new();
 
     protected override async Task OnInitializedAsync()
     {
         using var context = await DbFactory.CreateDbContextAsync();
-        
-        var Location = await context.Locations.FindAsync(LocationId);
-        if (Location == null) { Navigation.NavigateTo("/inventory"); return; }
-        LocationName = Location.Name;
+        var location = await context.Locations.FindAsync(LocationId);
+        if (location == null)
+        {
+            Navigation.NavigateTo("/inventory");
+            return;
+        }
+        LocationName = location.Name;
 
-        var Products = await context.Products.OrderBy(p => p.Name).ToListAsync();
+        var products = await context.Products.OrderBy(p => p.Name).ToListAsync();
         var currentStock = await context.ProductLocations
             .Where(pl => pl.LocationId == LocationId)
             .ToListAsync();
 
-        AdjustmentList = Products.Select(p => new AdjustmentItem
+        AdjustmentList = products.Select(p => new AdjustmentItem
         {
             ProductId = p.Id,
             ProductName = p.Name,
@@ -151,7 +83,6 @@
     private async Task SaveAdjustments()
     {
         using var context = await DbFactory.CreateDbContextAsync();
-
         foreach (var item in AdjustmentList)
         {
             var stockRecord = await context.ProductLocations
@@ -159,7 +90,6 @@
 
             if (item.NewQuantity == 0 && stockRecord != null)
             {
-                // Remove the record if they set it to 0 (cleans up ghost stock!)
                 context.ProductLocations.Remove(stockRecord);
             }
             else if (item.NewQuantity != item.SystemQuantity)
@@ -181,9 +111,8 @@
                 }
             }
         }
-
         await context.SaveChangesAsync();
-        Navigation.NavigateTo("/inventory"); // Go back to check the results!
+        Navigation.NavigateTo("/inventory");
     }
 
     public class AdjustmentItem
@@ -194,4 +123,4 @@
         public int SystemQuantity { get; set; }
         public int NewQuantity { get; set; }
     }
-}</adjustmentitem></ApplicationDbContext>
+}

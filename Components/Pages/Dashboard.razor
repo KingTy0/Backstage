@@ -16,11 +16,11 @@
 @using PuppetFestAPP.Web.Data
 @attribute [Authorize]
 
-<<<<<<< Updated upstream
+
 @* ── Page title appears in the browser tab ── *@
 <PageTitle>Dashboard - Puppet Fest Merch</PageTitle>
 
-<<<<<<< Updated upstream
+
 @* ── Greeting: shows the logged-in user's email/username ── *@
 <h1>Hello, @context.User.Identity?.Name!</h1>
 
@@ -43,7 +43,7 @@
 
         </ul>
     </div>
-=======
+
 <pagetitle>Dashboard - Puppet Fest Merch</pagetitle>
 <div class="container" class="mt-4">
 <h1>Hello, @UserName!</h1>
@@ -99,9 +99,9 @@
                 <p class="text-center text-muted my-3">No sales activity recorded today yet.</p>
             }
         </div>
->>>>>>> Stashed changes
+
 </div>
-=======
+
 <MudContainer MaxWidth="MaxWidth.False" Style="margin-top:1.5rem;">
     <MudText Typo="Typo.h4">Hello, @UserName!</MudText>
     <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-4">Welcome to the Puppet Festival Merchandise Management System.</MudText>
@@ -153,11 +153,11 @@
         }
     </MudPaper>
 </MudContainer>
->>>>>>> Stashed changes
+
 
 
 @code {
-<<<<<<< Updated upstream
+
     // ── HttpContext cascading parameter ──
     // In Blazor, a "cascading parameter" is a value passed down from a
     // parent component (in this case, the App/Router). HttpContext contains
@@ -171,7 +171,7 @@
     [CascadingParameter]
     private HttpContext context { get; set; } = default!;
 }
-=======
+
     private string UserName = "User";
     private List<string> UserRoles = new();
     private decimal TotalRevenue;
@@ -215,4 +215,4 @@
     }
 }
 </string></ApplicationDbContext>
->>>>>>> Stashed changes
+

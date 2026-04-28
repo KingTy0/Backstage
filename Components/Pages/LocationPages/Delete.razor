@@ -5,45 +5,49 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<pagetitle>Delete Location</pagetitle>
-<div class="container" class="mt-4">
-<h1>Delete Location</h1>
+<PageTitle>Delete Location</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Delete Location</MudText>
 
     @if (Location == null)
     {
-        <div class="alert alert-info">Loading...</div></div>
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
     }
     else
     {
-        <div class="alert alert-danger">
-<h4>Are you sure you want to delete this?</h4>
-<p><strong>Name:</strong> @Location.Name</p>
-<p><strong>Address:</strong> @Location.Address</p>
-</div>
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-4">
+                Are you sure you want to delete this?
+            </MudAlert>
 
-        @if (HasDependencies)
-        {
-            <div class="alert alert-warning">
-<strong>Cannot Delete:</strong> This Location has stock or transfer records associated with it. 
-                You should mark it as <strong>Inactive</strong> instead.
-            </div>
-        }
+            <MudText Typo="Typo.body1"><strong>Name:</strong> @Location.Name</MudText>
+            <MudText Typo="Typo.body1" Class="mb-4"><strong>Address:</strong> @Location.Address</MudText>
 
-        <div class="mt-4">
-<<<<<<< Updated upstream
-            <button class="btn btn-danger" @onclick="ConfirmDelete" disabled="@HasDependencies">
-                Permanently Delete
-            </button>
-            <a href="/locations" class="btn btn-secondary">Cancel</a>
-        </div>
+            @if (HasDependencies)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-4">
+                    <strong>Cannot Delete:</strong> This location has stock or transfer records. 
+                    Deactivate it instead of deleting.
+                </MudAlert>
+            }
+
+            <MudStack Row="true" Class="mt-6" Spacing="2">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Error" 
+                           OnClick="ConfirmDelete" 
+                           Disabled="@HasDependencies">
+                    Permanently Delete
+                </MudButton>
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Secondary" 
+                           Href="/Locations">
+                    Cancel
+                </MudButton>
+            </MudStack>
+        </MudPaper>
     }
-=======
-<MudButton __at__onclick="ConfirmDelete" color="Color.Error" disabled="@HasDependencies" type="Submit" variant="Variant.Filled">Permanently Delete</MudButton>
-<MudButton color="Color.Secondary" href="/Locations" variant="Variant.Filled">Cancel</MudButton>
->>>>>>> Stashed changes
-</div>
-    }
-
+</MudContainer>
 
 @code {
     [Parameter] public int Id { get; set; }
@@ -57,12 +61,8 @@
 
         if (Location != null)
         {
-            // Check if there is any stock currently sitting in this Location
             var stockCount = await context.ProductLocations.AnyAsync(pl => pl.LocationId == Id);
-            
-            // Check if this Location is used in any transfer boxes
             var transferCount = await context.StockTransferBoxes.AnyAsync(b => b.FromLocationId == Id || b.ToLocationId == Id);
-
             HasDependencies = stockCount || transferCount;
         }
     }
@@ -72,12 +72,12 @@
         if (HasDependencies) return;
 
         using var context = await DbFactory.CreateDbContextAsync();
-        if (Location != null)
+        var loc = await context.Locations.FindAsync(Id);
+        if (loc != null)
         {
-            context.Locations.Remove(Location);
+            context.Locations.Remove(loc);
             await context.SaveChangesAsync();
         }
-        
         Navigation.NavigateTo("/Locations");
     }
-}</ApplicationDbContext>
+}

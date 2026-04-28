@@ -1,10 +1,8 @@
 ﻿@page "/Account/Login"
-
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using PuppetFestAPP.Web.Data
-
 @inject SignInManager<ApplicationUser> SignInManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
@@ -12,80 +10,58 @@
 
 <PageTitle>Log in</PageTitle>
 
-<<<<<<< Updated upstream
-<h1>Log in</h1>
-<div class="row">
-    <div class="col-lg-6">
-        <section>
-            <StatusMessage Message="@errorMessage" />
-            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
-                <DataAnnotationsValidator />
-                <h2>Use a local account to log in.</h2>
-                <hr />
-                <ValidationSummary class="text-danger" role="alert" />
-                <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label for="Input.Email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
-                </div>
-                <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label for="Input.Password" class="form-label">Password</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
-                </div>
-                <div class="checkbox mb-3">
-                    <label class="form-label">
-                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
-                        Remember me
-                    </label>
-                </div>
-                <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-                </div>
-                <div>
-                    <p>
-                        <a href="Account/ForgotPassword">Forgot your password?</a>
-                    </p>
-                    <p>
-                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
-                    </p>
-                    <p>
-                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
-                    </p>
-                </div>
-            </EditForm>
-        </section>
-    </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
-</div>
-=======
 <MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4" Style="margin-top:1.5rem;">
-    <MudText Typo="Typo.h4">Log in</MudText>
-    <MudGrid GutterSize="3" Class="mt-3">
+    <MudText Typo="Typo.h4" Class="mb-4">Log in</MudText>
+    
+    <MudGrid GutterSize="3">
         <MudItem xs="12" lg="6">
             <MudPaper Elevation="1" Class="pa-4">
                 <StatusMessage Message="@errorMessage" />
+                
                 <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
                     <DataAnnotationsValidator />
                     <MudText Typo="Typo.h6">Use a local account to log in.</MudText>
                     <MudDivider Class="my-3" />
-                    <ValidationSummary class="mud-text-error" role="alert" />
-                    <MudTextField @bind-Value="Input.Email" AutoComplete="username" Placeholder="name@example.com" Required="true" Label="Email" For="@(() => Input.Email)" FullWidth="true" />
-                    <MudTextField @bind-Value="Input.Password" InputType="InputType.Password" AutoComplete="current-password" Placeholder="password" Required="true" Label="Password" For="@(() => Input.Password)" FullWidth="true" Class="mt-3" />
-                    <MudCheckBox @bind-Checked="Input.RememberMe" Label="Remember me" Class="mt-2" />
-                    <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4">Log in</MudButton>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3"><a href="Account/ForgotPassword">Forgot your password?</a></MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary"><a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a></MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary"><a href="Account/ResendEmailConfirmation">Resend email confirmation</a></MudText>
+                    
+                    <ValidationSummary class="mud-text-error mb-4" role="alert" />
+
+                    <MudTextField @bind-Value="Input.Email" 
+                                  Label="Email" 
+                                  Variant="Variant.Outlined" 
+                                  InputType="InputType.Email"
+                                  AutoComplete="username" 
+                                  Required="true" 
+                                  For="@(() => Input.Email)" 
+                                  FullWidth="true" />
+
+                    <MudTextField @bind-Value="Input.Password" 
+                                  Label="Password" 
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Password" 
+                                  AutoComplete="current-password" 
+                                  Required="true" 
+                                  For="@(() => Input.Password)" 
+                                  FullWidth="true" 
+                                  Class="mt-3" />
+
+                    @* Fixed: Added T="bool" to resolve the inference error *@
+                    <MudCheckBox T="bool" @bind-Value="Input.RememberMe" Label="Remember me" Color="Color.Primary" Class="mt-2" />
+
+                    <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4">
+                        Log in
+                    </MudButton>
+
+                    <div class="mt-4">
+                        <MudLink href="Account/ForgotPassword" Typo="Typo.body2">Forgot your password?</MudLink><br />
+                        <MudLink href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" Typo="Typo.body2">
+                            Register as a new user
+                        </MudLink><br />
+                        <MudLink href="Account/ResendEmailConfirmation" Typo="Typo.body2">Resend email confirmation</MudLink>
+                    </div>
                 </EditForm>
             </MudPaper>
         </MudItem>
+
         <MudItem xs="12" lg="6">
             <MudPaper Elevation="1" Class="pa-4">
                 <MudText Typo="Typo.h6">Use another service to log in.</MudText>
@@ -95,7 +71,6 @@
         </MudItem>
     </MudGrid>
 </MudContainer>
->>>>>>> Stashed changes
 
 @code {
     private string? errorMessage;
@@ -113,16 +88,14 @@
     {
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
-            // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
     }
 
     public async Task LoginUser()
     {
-        // This doesn't count login failures towards account lockout
-        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
         var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");

@@ -19,7 +19,7 @@
             @* We removed the DataAnnotationsValidator here so the address won't blink red *@
 
             <div class="mb-3">
-<<<<<<< Updated upstream
+
                 <label class="form-label">Location Name (Required)</label>
                 <InputText @bind-Value="Location.Name" class="form-control" />
                 @* We only show validation for the Name *@
@@ -46,7 +46,7 @@
             </div>
         </EditForm>
     }
-=======
+
 <label class="form-label">Location Name (Required)</label>
 <MudTextfield __at__bind-value="Location.Name"></MudTextfield>
                 @* We only show validation for the Name *@
@@ -59,7 +59,7 @@
 <label class="form-label">Address (Optional)</label>
 <MudTextfield __at__bind-value="Location.Address" placeholder="Leave blank for Vans"></MudTextfield>
 <div class="form-text">If left blank, a placeholder space will be used to satisfy the system.</div>
->>>>>>> Stashed changes
+
 </div>
 <div class="mb-3 form-check">
 <MudCheckbox __at__bind-checked="Location.IsActive" id="activeCheck"></MudCheckbox>

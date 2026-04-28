@@ -7,11 +7,11 @@
 
 <pagetitle>Transfer History</pagetitle>
 <h1>Transfer Boxes</h1>
-<<<<<<< Updated upstream
+
 <a href="/inventory/transfer/create" class="btn btn-primary mb-3">+ New Transfer</a>
 =======
 <MudButton color="Color.Primary" href="/inventory/transfer/create" variant="Variant.Filled">+ New Transfer</MudButton>
->>>>>>> Stashed changes
+
 
 @if (TransferBoxes?.Any() == true)
 {
@@ -35,19 +35,19 @@
                 <small>+@(box.Items.Count - 3) more</small>
             }
         </TemplateColumn>
-<<<<<<< Updated upstream
+
         <TemplateColumn Title="Actions" Context="box">
             <a href="/inventory/transfer/details/@box.Id" class="btn btn-sm btn-outline-primary">View</a>
         </TemplateColumn>
     </QuickGrid>
     <Paginator State="pagination" />
-=======
+
 <templatecolumn context="box" title="Actions">
 <MudButton "="" +="" box.id)"="" color="Color.Primary" details="" href="@(" inventory="" transfer="" variant="Variant.Filled">View</MudButton>
 </TemplateColumn>
 </QuickGrid>
 <paginator state="pagination"></Paginator>
->>>>>>> Stashed changes
+
 }
 else
 {
