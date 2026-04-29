@@ -21,7 +21,7 @@ You can see the live branch [HERE](https://backstagechicagopuppetfest-cff3bgbuhm
 * Asha (he/him)
   * Designed database tables and data architecture
   * Configured Entity Framework Core
-  * Implemented MudBlazor UI components
+  * Recreated all styling elements from each given Figma component
 * Luis (he/him)
   * Developed outgoing and incoming box workflows
   * Built CRUD functionality
@@ -34,11 +34,13 @@ You can see the live branch [HERE](https://backstagechicagopuppetfest-cff3bgbuhm
   * Built product pages
   * Managed Azure deployment
   * Oversaw branch management
+  * Debugged over 1k errors in multiple branches
 * Logan (she/her)
   * Displayed the data
   * Developed Sales Page (Version 1)
   * Built Product, Location, and Catalog pages
   * Developed logic for adding products to boxes and tracking deliveries by location
+  * Implimented the designs from Figma into Blazor through MudBlazor across all pages
 * Yunjong (he/him)
   * Managed view dependencies
   * Resolved merge conflicts across branches
