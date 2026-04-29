@@ -1,5 +1,6 @@
 @page "/Locations"
 @using Microsoft.EntityFrameworkCore
+@using QG = Microsoft.AspNetCore.Components.QuickGrid
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using PuppetFestAPP.Web.Data
 @using System.Linq
@@ -14,7 +15,7 @@
     Create New Location
 </MudButton>
 
-@if (Locations == null)
+@if (AllLocations == null)
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
 }
@@ -28,44 +29,58 @@ else
                       Immediate="true" />
     </div>
 
-    <QuickGrid Items="@FilteredLocations.AsQueryable()" Pagination="pagination">
-        <PropertyColumn Property="@(l => l.Name)" Sortable="true" Title="Name" />
-        <PropertyColumn Property="@(l => l.Address)" Sortable="true" Title="Address" />
-        
-        <TemplateColumn Title="Type" Context="loc">
-            <MudChip T="string" Color="@(loc.Type == LocationType.Van ? Color.Warning : Color.Info)">
-                @loc.Type
-            </MudChip>
-        </TemplateColumn>
+    <Microsoft.AspNetCore.Components.QuickGrid.QuickGrid Items="@FilteredLocations.AsQueryable()" Pagination="pagination">
+    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Property="@(l => l.Name)" Sortable="true" Title="Name" />
+    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Property="@(l => l.Address)" Sortable="true" Title="Address" />
+    
+    <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Type">
+        @{
+            var loc = context as Location;
+            if (loc != null)
+            {
+                <MudChip T="string" Color="@(loc.Type == LocationType.Van ? Color.Warning : Color.Info)">
+                    @loc.Type
+                </MudChip>
+            }
+        }
+    </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
 
-        <PropertyColumn Property="@(l => l.IsActive)" Title="Active" />
+    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Property="@(l => l.IsActive)" Title="Active" />
 
-        <TemplateColumn Title="Actions" Context="loc">
-            <MudStack Row="true">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" href="@($"/locations/edit/{loc.Id}")">Edit</MudButton>
-                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" href="@($"/locations/delete/{loc.Id}")">Delete</MudButton>
-            </MudStack>
-        </TemplateColumn>
-    </QuickGrid>
+    <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Actions">
+        @{
+            var loc = context as Location;
+            if (loc != null)
+            {
+                <MudStack Row="true">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" href="@($"/locations/edit/{loc.Id}")">Edit</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" href="@($"/locations/delete/{loc.Id}")">Delete</MudButton>
+                </MudStack>
+            }
+        }
+    </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
+</Microsoft.AspNetCore.Components.QuickGrid.QuickGrid>
 
-    <Paginator State="pagination" />
+<Microsoft.AspNetCore.Components.QuickGrid.Paginator State="pagination" />
+
 }
 
 @code {
-    private List<Location>? Locations;
+    // Renamed to AllLocations to avoid conflict with the Page name "Locations"
+    private List<Location>? AllLocations;
     private string searchTerm = "";
 
     private IEnumerable<Location> FilteredLocations => 
         string.IsNullOrWhiteSpace(searchTerm) 
-            ? Locations ?? Enumerable.Empty<Location>() 
-            : (Locations ?? Enumerable.Empty<Location>())
+            ? AllLocations ?? Enumerable.Empty<Location>() 
+            : (AllLocations ?? Enumerable.Empty<Location>())
                 .Where(l => l.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    PaginationState pagination = new() { ItemsPerPage = 20 };
+    QG.PaginationState pagination = new() { ItemsPerPage = 20 };
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = await DbFactory.CreateDbContextAsync();
-        Locations = await context.Locations.ToListAsync();
+        using var db = await DbFactory.CreateDbContextAsync();
+        AllLocations = await db.Locations.ToListAsync();
     }
 }

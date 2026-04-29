@@ -51,7 +51,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbFactory.CreateDbContext();
+        // FIX: Use Async context creation
+        using var context = await DbFactory.CreateDbContextAsync();
         Product = await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
 
         if (Product is null)
@@ -62,9 +63,9 @@
 
     private async Task DeleteProduct()
     {
-        using var context = DbFactory.CreateDbContext();
+        using var context = await DbFactory.CreateDbContextAsync();
         
-        // 1. Capture info for redirect
+        // 1. Capture info for redirect before deleting
         var parentId = Product?.ParentProductId;
 
         // 2. Fetch with related data to avoid foreign key crashes
@@ -74,9 +75,11 @@
 
         if (productToDelete != null)
         {
+            // FIX: Use context.RemoveRange directly. 
+            // This allows EF to handle the ICollection<Inventory> type correctly.
             if (productToDelete.Inventories != null && productToDelete.Inventories.Any())
             {
-                context.ProductLocations.RemoveRange(productToDelete.Inventories);
+                context.RemoveRange(productToDelete.Inventories);
             }
             
             context.Products.Remove(productToDelete);

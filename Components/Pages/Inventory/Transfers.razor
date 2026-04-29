@@ -5,69 +5,86 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 
-<pagetitle>Transfer History</pagetitle>
-<h1>Transfer Boxes</h1>
+<PageTitle>Transfer History</PageTitle>
 
-<a href="/inventory/transfer/create" class="btn btn-primary mb-3">+ New Transfer</a>
-=======
-<MudButton color="Color.Primary" href="/inventory/transfer/create" variant="Variant.Filled">+ New Transfer</MudButton>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+        <MudText Typo="Typo.h4">Transfer Boxes</MudText>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" href="/inventory/transfer/create">
+            + New Transfer
+        </MudButton>
+    </MudStack>
 
+    @if (TransferBoxes?.Any() == true)
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            @* Using the full namespace to avoid component and context variable conflicts *@
+            <Microsoft.AspNetCore.Components.QuickGrid.QuickGrid Items="@TransferBoxes.AsQueryable()" Pagination="pagination" TGridItem="StockTransferBox">
+                
+                <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Date" Context="box">
+                    @box.CreatedAt.ToString("MMM dd, yyyy")
+                </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
 
-@if (TransferBoxes?.Any() == true)
-{
-    <quickgrid items="@((IQueryable<StockTransferBox>)TransferBoxes.AsQueryable())" pagination="pagination" tgriditem="StockTransferBox">
-<templatecolumn context="box" title="Date">
-            @box.CreatedAt.ToString("MMM dd, yyyy")
-        </TemplateColumn>
-<templatecolumn context="box" title="From → To">
-<span class="badge bg-secondary">@box.FromLocation.Name</span>
-<i class="bi bi-arrow-right ms-1"></i>
-<span class="badge bg-primary">@box.ToLocation.Name</span>
-</TemplateColumn>
-<propertycolumn property="@(x => x.Items.Count)" title="# Items"></PropertyColumn>
-<templatecolumn context="box" title="Items">
-            @{
-                var itemPreview = string.Join(", ", box.Items.Take(3).Select(i => $"{i.Product.Name} x{i.Quantity}"));
-            }
-            @itemPreview
-            @if (box.Items.Count > 3)
-            {
-                <small>+@(box.Items.Count - 3) more</small>
-            }
-        </TemplateColumn>
+                <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="From → To" Context="box">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@box.FromLocation?.Name</MudChip>
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Class="mx-1" />
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary">@box.ToLocation?.Name</MudChip>
+                </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
 
-        <TemplateColumn Title="Actions" Context="box">
-            <a href="/inventory/transfer/details/@box.Id" class="btn btn-sm btn-outline-primary">View</a>
-        </TemplateColumn>
-    </QuickGrid>
-    <Paginator State="pagination" />
+                <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Property="@(x => x.Items.Count)" Title="# Items" />
 
-<templatecolumn context="box" title="Actions">
-<MudButton "="" +="" box.id)"="" color="Color.Primary" details="" href="@(" inventory="" transfer="" variant="Variant.Filled">View</MudButton>
-</TemplateColumn>
-</QuickGrid>
-<paginator state="pagination"></Paginator>
+                <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Items" Context="box">
+                    @{
+                        var items = box.Items ?? new List<StockTransferBoxItem>();
+                        var itemPreview = string.Join(", ", items.Take(2).Select(i => $"{i.Product?.Name} x{i.Quantity}"));
+                    }
+                    <MudText Typo="Typo.body2">
+                        @itemPreview
+                        @if (items.Count > 2)
+                        {
+                            <span class="mud-text-secondary ml-1">(+@(items.Count - 2) more)</span>
+                        }
+                    </MudText>
+                </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
 
-}
-else
-{
-    <div class="alert alert-info">
-        No transfers yet. <a href="/inventory/transfer/create">Create one</a>
-</div>
-}
+                <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Actions" Context="box">
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Primary" 
+                               Size="Size.Small" 
+                               Href="@($"/inventory/transfer/details/{box.Id}")">
+                        View
+                    </MudButton>
+                </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
+
+            </Microsoft.AspNetCore.Components.QuickGrid.QuickGrid>
+
+            <div class="mt-4">
+                <Microsoft.AspNetCore.Components.QuickGrid.Paginator State="pagination" />
+            </div>
+        </MudPaper>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info">
+            No transfers yet. <MudLink href="/inventory/transfer/create">Create one</MudLink>
+        </MudAlert>
+    }
+</MudContainer>
 
 @code {
     private List<StockTransferBox> TransferBoxes = new();
-    PaginationState pagination = new() { ItemsPerPage = 20 };
+    
+    // Explicitly using the full type for the pagination state
+    Microsoft.AspNetCore.Components.QuickGrid.PaginationState pagination = new() { ItemsPerPage = 20 };
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = await DbFactory.CreateDbContextAsync();
-        TransferBoxes = await context.StockTransferBoxes
+        using var db = await DbFactory.CreateDbContextAsync();
+        TransferBoxes = await db.StockTransferBoxes
             .Include(b => b.FromLocation)
             .Include(b => b.ToLocation)
             .Include(b => b.Items).ThenInclude(i => i.Product)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
     }
-}</StockTransferBox></ApplicationDbContext>
+}

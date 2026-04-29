@@ -5,6 +5,8 @@ using PuppetFestAPP.Web.Components;
 using PuppetFestAPP.Web.Components.Account;
 using PuppetFestAPP.Web.Data;
 using PuppetFestAPP.Web.Services;
+using MudBlazor.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +67,12 @@ builder.Services.AddHostedService<TimedBackupService>();
 
 builder.Services.AddScoped<ProductService>();
 
+// Add services to the container.
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+// Add this line right here!
+builder.Services.AddMudServices(); 
 
 
 var app = builder.Build();
@@ -202,21 +210,22 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms.
     app.UseHsts();
-    app.UseMigrationsEndPoint();
 }
 
 app.UseHttpsRedirection();
 
-
+// This is required for MudBlazor and static assets (CSS/JS)
+app.UseStaticFiles();
 app.UseAntiforgery();
 
-app.MapStaticAssets();
+// Map the Razor Components
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Add additional endpoints required by the Identity /Account Razor components.
+// Add additional endpoints required by the Identity / Account management and logout
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();
+

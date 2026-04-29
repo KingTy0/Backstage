@@ -1,6 +1,5 @@
 @page "/Products"
 @using Microsoft.EntityFrameworkCore
-@using QG = Microsoft.AspNetCore.Components.QuickGrid
 @using PuppetFestAPP.Web.Data
 @using PuppetFestAPP.Web.Models
 @rendermode InteractiveServer
@@ -9,7 +8,7 @@
 <PageTitle>Product Management</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
         <MudText Typo="Typo.h4">Product Management</MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" href="Products/create">
             Create New Master Product
@@ -26,9 +25,10 @@
     </div>
 
     <MudPaper Elevation="1" Class="pa-4">
-        <QG.QuickGrid Items="FilteredProducts" Pagination="pagination">
-            @* Image Column *@
-            <QG.TemplateColumn Title="Image" Context="prod">
+        @* Using FULL NAMESPACE to bypass the alias bug and fix 'prod' scope errors *@
+        <Microsoft.AspNetCore.Components.QuickGrid.QuickGrid Items="FilteredProducts" Pagination="pagination">
+            
+            <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Image" Context="prod">
                 @if (prod.Image != null && !string.IsNullOrEmpty(prod.Image.FileName))
                 {
                     <img class="rounded shadow-sm" src="/Images/Products/@prod.Image.FileName" 
@@ -38,17 +38,17 @@
                 {
                     <MudText Typo="Typo.caption" Color="Color.Secondary">No Image</MudText>
                 }
-            </QG.TemplateColumn>
+            </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
 
-            <QG.PropertyColumn Property="@(p => p.Name)" Sortable="true" Title="Product Name" />
+            <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Property="@(p => p.Name)" Sortable="true" Title="Product Name" />
             
-            <QG.TemplateColumn Title="Category" Sortable="true" Context="prod">
+            <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Category" Sortable="true" Context="prod">
                 @prod.Category?.Name
-            </QG.TemplateColumn>
+            </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
 
-            <QG.PropertyColumn Property="@(p => p.Price)" Format="C" Sortable="true" Title="Price" />
+            <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Property="@(p => p.Price)" Format="C" Sortable="true" Title="Price" />
 
-            <QG.TemplateColumn Title="Actions" Context="prod">
+            <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Actions" Context="prod">
                 <MudStack Row="true" Spacing="1">
                     <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" 
                                href="@($"/products/edit/{prod.Id}")">Edit</MudButton>
@@ -57,11 +57,12 @@
                     <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Error" 
                                href="@($"/products/delete/{prod.Id}")">Delete</MudButton>
                 </MudStack>
-            </QG.TemplateColumn>
-        </QG.QuickGrid>
+            </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
+
+        </Microsoft.AspNetCore.Components.QuickGrid.QuickGrid>
 
         <div class="mt-4">
-            <QG.Paginator State="pagination" />
+            <Microsoft.AspNetCore.Components.QuickGrid.Paginator State="pagination" />
         </div>
     </MudPaper>
 </MudContainer>
@@ -76,12 +77,12 @@
             : (Products ?? Enumerable.Empty<Product>().AsQueryable())
                 .Where(p => p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    QG.PaginationState pagination = new QG.PaginationState { ItemsPerPage = 20 };
+    Microsoft.AspNetCore.Components.QuickGrid.PaginationState pagination = new() { ItemsPerPage = 20 };
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = await DbFactory.CreateDbContextAsync();
-        var data = await context.Products
+        using var db = await DbFactory.CreateDbContextAsync();
+        var data = await db.Products
             .Include(p => p.Category)
             .Include(p => p.Image)
             .Where(p => p.ParentProductId == null)

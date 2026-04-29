@@ -20,27 +20,27 @@
                     @locGroup.Key.Name (@locGroup.Key.Type) - Total: @locGroup.Sum(x => x.Quantity)
                 </MudText>
                 <MudSpacer />
-                <MudButton Variant="Variant.Outlined" 
-                           Color="Color.Primary" 
-                           StartIcon="@Icons.Material.Filled.Edit"
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit"
                            href="@($"/inventory/adjust/{locGroup.Key.Id}")">
                     End of Day Adjustment
                 </MudButton>
             </MudToolBar>
 
             <div class="pa-4">
-                <QuickGrid Items="@locGroup.AsQueryable()" TGridItem="ProductLocation">
-                    <TemplateColumn Title="Product" Context="item">
-                        <div class="d-flex flex-column">
-                            <MudText Typo="Typo.body1">@item.Product.Name</MudText>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                @if (item.Product.Size != ProductSize.NA) { <span>Size: @item.Product.Size </span> }
-                                @if (item.Product.Color != ProductColor.NA) { <span>| Color: @item.Product.Color</span> }
-                            </MudText>
-                        </div>
-                    </TemplateColumn>
-                    <PropertyColumn Property="@(x => x.Quantity)" Title="Qty" Sortable="true" />
-                </QuickGrid>
+                @* 1. Using FULL Namespace to bypass Alias/Unexpected Name errors *@
+                <Microsoft.AspNetCore.Components.QuickGrid.QuickGrid Items="@locGroup.AsQueryable()" TGridItem="ProductLocation">
+                    
+                    @* 2. Simplified PropertyColumns to fix Lambda Delegate errors *@
+                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Product" 
+                        Property="@(pl => pl.Product != null ? pl.Product.Name : "Unknown")" Sortable="true" />
+
+                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Details" 
+                        Property="@(pl => pl.Product != null ? $"{pl.Product.Size} / {pl.Product.Color}" : "-")" />
+
+                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Qty" 
+                        Property="@(pl => pl.Quantity)" Sortable="true" />
+
+                </Microsoft.AspNetCore.Components.QuickGrid.QuickGrid>
             </div>
         </MudPaper>
     }
@@ -55,8 +55,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = await DbFactory.CreateDbContextAsync();
-        StockData = await context.ProductLocations
+        using var db = await DbFactory.CreateDbContextAsync();
+        StockData = await db.ProductLocations
             .Include(pl => pl.Product)
             .Include(pl => pl.Location)
             .Where(pl => pl.Quantity > 0)

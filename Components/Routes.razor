@@ -1,5 +1,6 @@
 ﻿@using PuppetFestAPP.Web.Components.Account.Shared
-<Router AppAssembly="typeof(Program).Assembly">
+
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
             <NotAuthorized>
@@ -8,12 +9,9 @@
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
-
-</Router>
-
     <NotFound>
         <PageTitle>Page Not Found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
+        <LayoutView Layout="@typeof(Layout.MainLayout)">
             <MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto" Style="margin-top:3rem;">
                 <MudPaper Elevation="2" Class="pa-6 text-center">
                     <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Color="Color.Error" Size="Size.Large" />
@@ -30,4 +28,3 @@
         </LayoutView>
     </NotFound>
 </Router>
-

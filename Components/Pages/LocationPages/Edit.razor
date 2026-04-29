@@ -5,73 +5,46 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<pagetitle>Edit Location</pagetitle>
-<div class="container" class="mt-4">
-<h1>Edit Location</h1>
+<PageTitle>Edit Location</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Edit Location</MudText>
 
     @if (Location == null)
     {
-        <div class="alert alert-info">Loading...</div></div>
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
     }
     else
     {
-        <editform formname="editLocation" model="Location" onvalidsubmit="UpdateLocation">
-            @* We removed the DataAnnotationsValidator here so the address won't blink red *@
+        <EditForm Model="Location" OnValidSubmit="UpdateLocation">
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudStack Spacing="3">
+                    
+                    <MudTextField Label="Location Name (Required)" 
+                                  @bind-Value="Location.Name" 
+                                  Required="true" 
+                                  RequiredError="A location name is required." 
+                                  Variant="Variant.Outlined" />
 
-            <div class="mb-3">
+                    <MudTextField Label="Address (Optional)" 
+                                  @bind-Value="Location.Address" 
+                                  Placeholder="Leave blank for Vans" 
+                                  HelperText="If left blank, a placeholder space will be used." 
+                                  Variant="Variant.Outlined" />
 
-                <label class="form-label">Location Name (Required)</label>
-                <InputText @bind-Value="Location.Name" class="form-control" />
-                @* We only show validation for the Name *@
-                @if (string.IsNullOrWhiteSpace(Location.Name))
-                {
-                    <div class="text-danger">A location name is required.</div>
-                }
-            </div>
+                    @* Fixed: Added T="bool" and changed to @bind-Value *@
+                    <MudCheckBox T="bool" @bind-Value="Location.IsActive" Label="Is Active (Visible in Menus)" Color="Color.Primary" />
 
-            <div class="mb-3">
-                <label class="form-label">Address (Optional)</label>
-                <InputText @bind-Value="Location.Address" class="form-control" placeholder="Leave blank for Vans" />
-                <div class="form-text">If left blank, a placeholder space will be used to satisfy the system.</div>
-            </div>
-
-            <div class="mb-3 form-check">
-                <InputCheckbox @bind-Value="Location.IsActive" class="form-check-input" id="activeCheck" />
-                <label class="form-check-label" for="activeCheck">Is Active (Visible in Menus)</label>
-            </div>
-
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="/locations" class="btn btn-secondary">Cancel</a>
-            </div>
+                    <MudStack Row="true" Class="mt-4" Spacing="2">
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">Save Changes</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" href="/Locations">Cancel</MudButton>
+                    </MudStack>
+                    
+                </MudStack>
+            </MudPaper>
         </EditForm>
     }
-
-<label class="form-label">Location Name (Required)</label>
-<MudTextfield __at__bind-value="Location.Name"></MudTextfield>
-                @* We only show validation for the Name *@
-                @if (string.IsNullOrWhiteSpace(Location.Name))
-                {
-                    <div class="mud-text-error">A Location name is required.</div>
-                }
-            </div>
-<div class="mb-3">
-<label class="form-label">Address (Optional)</label>
-<MudTextfield __at__bind-value="Location.Address" placeholder="Leave blank for Vans"></MudTextfield>
-<div class="form-text">If left blank, a placeholder space will be used to satisfy the system.</div>
-
-</div>
-<div class="mb-3 form-check">
-<MudCheckbox __at__bind-checked="Location.IsActive" id="activeCheck"></MudCheckbox>
-<label class="form-check-label" for="activeCheck">Is Active (Visible in Menus)</label>
-</div>
-<div class="mt-4">
-<MudButton color="Color.Primary" type="Submit" variant="Variant.Filled">Save Changes</MudButton>
-<MudButton color="Color.Secondary" href="/Locations" variant="Variant.Filled">Cancel</MudButton>
-</div>
-</editform>
-    }
-
+</MudContainer>
 
 @code {
     [Parameter] public int Id { get; set; }
@@ -85,23 +58,18 @@
 
     private async Task UpdateLocation()
     {
-        if (Location == null) return;
+        if (Location == null || string.IsNullOrWhiteSpace(Location.Name)) return;
 
         using var context = await DbFactory.CreateDbContextAsync();
-        
-        // 1. If name is blank, don't save
-        if (string.IsNullOrWhiteSpace(Location.Name)) return;
 
-        // 2. THE HACK: If address is empty, give it a space string " " 
-        // to bypass the [Required] attribute in your database model.
+        // THE HACK: If address is empty, give it a space to bypass database [Required] attributes
         if (string.IsNullOrWhiteSpace(Location.Address))
         {
-            Location.Address = " "; 
+            Location.Address = " ";
         }
 
         context.Locations.Update(Location);
         await context.SaveChangesAsync();
-        
         Navigation.NavigateTo("/Locations");
     }
-}</ApplicationDbContext>
+}

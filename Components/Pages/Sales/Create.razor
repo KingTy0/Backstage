@@ -13,7 +13,7 @@
         <MudItem xs="12" md="5">
             <MudCard>
                 <MudCardContent>
-                    <MudSelect T="int" Label="Location" Value="SelectedLocationId" ValueChanged="@(async loc => { SelectedLocationId = loc; await LoadProducts(); })" ValueExpression="() => SelectedLocationId" FullWidth="true">
+                    <MudSelect T="int" Label="Location" Value="SelectedLocationId" ValueChanged="@(async loc => { SelectedLocationId = loc; await LoadProducts(); })" ValueExpression="() => SelectedLocationId" FullWidth="true" Variant="Variant.Outlined">
                         <MudSelectItem T="int" Value="0">-- Select Location --</MudSelectItem>
                         @foreach (var loc in Locations)
                         {
@@ -21,7 +21,7 @@
                         }
                     </MudSelect>
 
-                    <MudSelect T="int" Label="Product" @bind-Value="SelectedProductId" Disabled="@(SelectedLocationId == 0)" FullWidth="true" Class="mt-4">
+                    <MudSelect T="int" Label="Product" @bind-Value="SelectedProductId" Disabled="@(SelectedLocationId == 0)" FullWidth="true" Class="mt-4" Variant="Variant.Outlined">
                         <MudSelectItem T="int" Value="0">-- Select Product --</MudSelectItem>
                         @foreach (var item in AvailableProducts)
                         {
@@ -29,7 +29,7 @@
                         }
                     </MudSelect>
 
-                    <MudNumericField @bind-Value="SaleQuantity" Min="1" Label="Quantity to Sell" FullWidth="true" Class="mt-4" />
+                    <MudNumericField @bind-Value="SaleQuantity" Min="1" Label="Quantity to Sell" FullWidth="true" Class="mt-4" Variant="Variant.Outlined" />
 
                     @if (!string.IsNullOrEmpty(ErrorMessage))
                     {
@@ -47,10 +47,11 @@
                     <MudText Typo="Typo.h6">Success Log</MudText>
                 </MudCardHeader>
                 <MudCardContent>
-                    <MudList Dense="true">
+                    @* FIX: Added T="string" to MudList and MudListItem *@
+                    <MudList T="string" Dense="true">
                         @foreach (var log in SaleLogs)
                         {
-                            <MudListItem>
+                            <MudListItem T="string">
                                 <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="me-2" />
                                 @log
                             </MudListItem>
@@ -69,23 +70,26 @@
     </MudStack>
 
     <MudCard Class="mt-3">
-        <MudTable Items="RecentSales" Dense="true" Hover="true" Class="mb-0">
-            <HeaderContent>
-                <MudTh>Time</MudTh>
-                <MudTh>Product</MudTh>
-                <MudTh>Qty</MudTh>
-                <MudTh>Location</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.SaleDate.ToLocalTime().ToString("t")</MudTd>
-                <MudTd>@context.Product.Name</MudTd>
-                <MudTd>@context.QuantitySold</MudTd>
-                <MudTd>@context.Location.Name</MudTd>
-            </RowTemplate>
-            <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">No sales recorded yet today.</MudText>
-            </NoRecordsContent>
-        </MudTable>
+        @* FIX: Added T="Sale" to MudTable *@
+      <MudTable T="Sale" Items="RecentSales" Dense="true" Hover="true" Class="mb-0">
+    <HeaderContent>
+        <MudTh>Time</MudTh>
+        <MudTh>Product</MudTh>
+        <MudTh>Qty</MudTh>
+        <MudTh>Location</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.SaleDate.ToLocalTime().ToString("t")</MudTd>
+        @* Add ?? string.Empty to ensure the return type is always a string *@
+        <MudTd>@(context.Product?.Name ?? "Unknown Product")</MudTd>
+        <MudTd>@context.QuantitySold</MudTd>
+        <MudTd>@(context.Location?.Name ?? "Unknown Location")</MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">No sales recorded yet today.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
     </MudCard>
 </MudContainer>
 
@@ -102,17 +106,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = await DbFactory.CreateDbContextAsync();
-        Locations = await context.Locations.OrderBy(l => l.Name).ToListAsync();
-        await LoadRecentSales(); // Load history on start
+        using var db = await DbFactory.CreateDbContextAsync();
+        Locations = await db.Locations.OrderBy(l => l.Name).ToListAsync();
+        await LoadRecentSales();
     }
 
     private async Task LoadRecentSales()
     {
-        using var context = await DbFactory.CreateDbContextAsync();
+        using var db = await DbFactory.CreateDbContextAsync();
         var today = DateTime.UtcNow.Date;
         
-        RecentSales = await context.Sales
+        RecentSales = await db.Sales
             .Include(s => s.Product)
             .Include(s => s.Location)
             .Where(s => s.SaleDate >= today && !s.IsManualAdjustment)
@@ -125,8 +129,8 @@
     {
         if (SelectedLocationId == 0) return;
 
-        using var context = await DbFactory.CreateDbContextAsync();
-        AvailableProducts = await context.ProductLocations
+        using var db = await DbFactory.CreateDbContextAsync();
+        AvailableProducts = await db.ProductLocations
             .Where(pl => pl.LocationId == SelectedLocationId && pl.Quantity > 0)
             .Select(pl => new ProductStockDTO
             {
@@ -139,9 +143,9 @@
     private async Task ProcessSale()
     {
         ErrorMessage = null;
-        using var context = await DbFactory.CreateDbContextAsync();
+        using var db = await DbFactory.CreateDbContextAsync();
 
-        var stockRecord = await context.ProductLocations
+        var stockRecord = await db.ProductLocations
             .FirstOrDefaultAsync(pl => pl.LocationId == SelectedLocationId && pl.ProductId == SelectedProductId);
 
         if (stockRecord == null || stockRecord.Quantity < SaleQuantity)
@@ -153,8 +157,8 @@
         stockRecord.Quantity -= SaleQuantity;
         stockRecord.LastUpdated = DateTime.UtcNow;
 
-        var product = await context.Products.FindAsync(SelectedProductId);
-        context.Sales.Add(new Sale
+        var product = await db.Products.FindAsync(SelectedProductId);
+        db.Sales.Add(new Sale
         {
             ProductId = SelectedProductId,
             LocationId = SelectedLocationId,
@@ -164,13 +168,13 @@
             IsManualAdjustment = false
         });
 
-        await context.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         SaleLogs.Insert(0, $"{DateTime.Now.ToShortTimeString()}: Sold {SaleQuantity}x {product?.Name}");
         
         SaleQuantity = 1;
         await LoadProducts(); 
-        await LoadRecentSales(); // NEW: Update the history table immediately!
+        await LoadRecentSales();
     }
 
     public class ProductStockDTO

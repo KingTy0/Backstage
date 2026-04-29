@@ -1,119 +1,32 @@
-@* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   File: Components/Pages/Dashboard.razor
-
-   PURPOSE: Post-login landing page. Shows the current user's
-   name and which roles they belong to. This page requires
-   authentication — unauthenticated users are redirected to login.
-
-   KEY CONCEPTS:
-   • @page "/dashboard"  →  Maps this component to the URL /dashboard
-   • @attribute [Authorize]  →  Requires login; redirects if not authenticated
-   • [CascadingParameter] HttpContext  →  Gives access to the current user
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *@
-
 @page "/dashboard"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
 @using PuppetFestAPP.Web.Data
 @attribute [Authorize]
+@rendermode InteractiveServer
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject AuthenticationStateProvider AuthStateProvider
 
-
-@* ── Page title appears in the browser tab ── *@
 <PageTitle>Dashboard - Puppet Fest Merch</PageTitle>
 
-
-@* ── Greeting: shows the logged-in user's email/username ── *@
-<h1>Hello, @context.User.Identity?.Name!</h1>
-
-<p>Welcome to the Puppet Festival Merchandise Management System.</p>
-
-@* ── Role display: iterates all defined roles and shows which
-     ones the current user belongs to ── *@
-<div class="card mt-4">
-    <div class="card-body">
-        <h5 class="card-title">Your Roles</h5>
-        <ul>
-
-            @foreach (var role in AppRoles.AllRoles)
-            {
-                @if (context.User.IsInRole(role))
-                {
-                    <li><strong>@role</strong></li>
-                }
-            }
-
-        </ul>
-    </div>
-
-<pagetitle>Dashboard - Puppet Fest Merch</pagetitle>
-<div class="container" class="mt-4">
-<h1>Hello, @UserName!</h1>
-<p class="text-muted">Welcome to the Puppet Festival Merchandise Management System.</p>
-<!-- Stats Summary Row -->
-<div class="row" class="mt-4">
-<div class="class="col-md-4"">
-<div class="card border-primary shadow-sm h-100">
-<div class="card-body text-center">
-<h6 class="text-uppercase text-muted">Today's Revenue</h6>
-<h2 class="display-6">@TotalRevenue.ToString("C")</h2>
-<small class="text-success"><i class="bi bi-cart-check"></i> From recorded sales</small>
-</div></div></div></div></div>
-<div class="class="col-md-4"">
-<div class="card border-warning shadow-sm h-100">
-<div class="card-body text-center">
-<h6 class="text-uppercase text-muted">Inventory Shrinkage</h6>
-<h2 class="display-6 text-danger">@ShrinkageCount</h2>
-<small class="text-muted">Extra items sold via manual count</small>
-</div></div></div>
-<div class="class="col-md-4"">
-<div class="card border-info shadow-sm h-100">
-<div class="card-body text-center">
-<h6 class="text-uppercase text-muted">Active Roles</h6>
-<div class="mt-2">
-                        @foreach (var role in UserRoles)
-                        {
-                            <span class="badge bg-info text-dark me-1">@role</span>
-                        }
-                    </div></div></div></div>
-<!-- Simple Over/Under Visualizer -->
-<div class="card mt-4 shadow-sm">
-<div class="card-header bg-white">
-<h5 class="mb-0">Manual vs. System Sales (Today)</h5>
-</div>
-<div class="card-body">
-            @if (TotalUnitsSold > 0)
-            {
-                <div class="progress" style="height: 30px;">
-                    @{
-                        var systemPct = (double)SystemSoldUnits / TotalUnitsSold * 100;
-                        var manualPct = (double)ShrinkageCount / TotalUnitsSold * 100;
-                    }
-                    <div class="progress-bar bg-primary" role="progressbar" style="width: @systemPct%" title="System Recorded">System: @SystemSoldUnits</div>
-<div class="progress-bar bg-warning text-dark" role="progressbar" style="width: @manualPct%" title="Manual Adjustments">Manual: @ShrinkageCount</div>
-</div>
-<div class="mt-2 small text-muted">
-<i class="bi bi-info-circle"></i> Blue represents button-clicks. Yellow represents discrepancies found during reconciliation.
-                </div>
-            }
-            else
-            {
-                <p class="text-center text-muted my-3">No sales activity recorded today yet.</p>
-            }
-        </div>
-
-</div>
-
-<MudContainer MaxWidth="MaxWidth.False" Style="margin-top:1.5rem;">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
     <MudText Typo="Typo.h4">Hello, @UserName!</MudText>
-    <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-4">Welcome to the Puppet Festival Merchandise Management System.</MudText>
+    <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">Welcome to the Puppet Festival Merchandise Management System.</MudText>
 
     <MudGrid GutterSize="3">
+        @* ── Revenue Card ── *@
         <MudItem xs="12" md="4">
             <MudPaper Elevation="1" Class="pa-4 text-center">
                 <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Today's Revenue</MudText>
                 <MudText Typo="Typo.h4" Class="mt-2">@TotalRevenue.ToString("C")</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Success"><MudIcon Icon="@Icons.Material.Filled.ShoppingCart" /> From recorded sales</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Success">
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" /> From recorded sales
+                </MudText>
             </MudPaper>
         </MudItem>
+
+        @* ── Shrinkage Card ── *@
         <MudItem xs="12" md="4">
             <MudPaper Elevation="1" Class="pa-4 text-center">
                 <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Inventory Shrinkage</MudText>
@@ -121,57 +34,48 @@
                 <MudText Typo="Typo.body2" Color="Color.Secondary">Extra items sold via manual count</MudText>
             </MudPaper>
         </MudItem>
+
+        @* ── Roles Card ── *@
         <MudItem xs="12" md="4">
             <MudPaper Elevation="1" Class="pa-4 text-center">
                 <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Active Roles</MudText>
                 <MudStack Direction="Row" Wrap="Wrap.Wrap" Justify="Justify.Center" Class="mt-2">
                     @foreach (var role in UserRoles)
                     {
-                        <MudChip Color="Color.Info" Variant="Variant.Filled" Style="margin:0.25rem;">@role</MudChip>
+                        <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">@role</MudChip>
                     }
                 </MudStack>
             </MudPaper>
         </MudItem>
     </MudGrid>
 
-    <MudPaper Elevation="1" Class="pa-4 mt-4">
+    @* ── Sales Visualizer ── *@
+    <MudPaper Elevation="1" Class="pa-4 mt-6">
         <MudText Typo="Typo.h6">Manual vs. System Sales (Today)</MudText>
 
         @if (TotalUnitsSold > 0)
         {
-            var systemPct = TotalUnitsSold == 0 ? 0 : (double)SystemSoldUnits / TotalUnitsSold * 100;
-            var manualPct = TotalUnitsSold == 0 ? 0 : (double)ShrinkageCount / TotalUnitsSold * 100;
-            <MudText Typo="Typo.subtitle2" Class="mt-3">System Sales: @SystemSoldUnits</MudText>
-            <MudProgressLinear Value="@systemPct" Color="Color.Primary" Class="mt-2" BufferValue="100" />
-            <MudText Typo="Typo.subtitle2" Class="mt-3">Manual Adjustments: @ShrinkageCount</MudText>
-            <MudProgressLinear Value="@manualPct" Color="Color.Warning" Class="mt-2" BufferValue="100" />
-            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-3">Blue represents system-recorded sales. Yellow represents reconciliation discrepancies.</MudText>
+            var systemPct = (double)SystemSoldUnits / TotalUnitsSold * 100;
+            var manualPct = (double)Math.Abs(ShrinkageCount) / TotalUnitsSold * 100;
+
+            <MudText Typo="Typo.subtitle2" Class="mt-4">System Sales: @SystemSoldUnits</MudText>
+            <MudProgressLinear Value="@systemPct" Color="Color.Primary" Height="10" Class="mt-1" />
+
+            <MudText Typo="Typo.subtitle2" Class="mt-4">Manual Adjustments: @Math.Abs(ShrinkageCount)</MudText>
+            <MudProgressLinear Value="@manualPct" Color="Color.Warning" Height="10" Class="mt-1" />
+
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4 d-block">
+                Blue represents system-recorded sales. Yellow represents reconciliation discrepancies.
+            </MudText>
         }
         else
         {
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">No sales activity recorded today yet.</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">No sales activity recorded today yet.</MudText>
         }
     </MudPaper>
 </MudContainer>
 
-
-
 @code {
-
-    // ── HttpContext cascading parameter ──
-    // In Blazor, a "cascading parameter" is a value passed down from a
-    // parent component (in this case, the App/Router). HttpContext contains
-    // the current HTTP request, including the authenticated user's identity.
-    //
-    // ⚠️ IMPORTANT: HttpContext is ONLY available in static server-side
-    // rendering (SSR) mode — the default when no @rendermode directive is set.
-    // If you later add @rendermode InteractiveServer to this page (e.g., to
-    // make buttons interactive), HttpContext will be NULL and this page will
-    // crash. For interactive pages, use AuthenticationStateProvider instead.
-    [CascadingParameter]
-    private HttpContext context { get; set; } = default!;
-}
-
     private string UserName = "User";
     private List<string> UserRoles = new();
     private decimal TotalRevenue;
@@ -194,10 +98,10 @@
             }
         }
 
-        using var context = await DbFactory.CreateDbContextAsync();
+        using var db = await DbFactory.CreateDbContextAsync();
         var today = DateTime.UtcNow.Date;
 
-        var salesToday = await context.Sales
+        var salesToday = await db.Sales
             .Where(s => s.SaleDate >= today)
             .ToListAsync();
 
@@ -214,5 +118,3 @@
             .Sum(s => s.QuantitySold);
     }
 }
-</string></ApplicationDbContext>
-
