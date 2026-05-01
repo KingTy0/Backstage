@@ -1,186 +1,321 @@
 @page "/sales/create"
 @using Microsoft.EntityFrameworkCore
 @using PuppetFestAPP.Web.Data
+@using PuppetFestAPP.Web.Models
 @rendermode InteractiveServer
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
-@inject NavigationManager Navigation
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h4">Record a Sale</MudText>
-    <MudDivider Class="mb-4" />
+<style>
+    .product-grid-card {
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 2px solid transparent;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 12px; /* Smoother corners */
+    }
+    .product-grid-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--mud-palette-primary);
+        box-shadow: var(--mud-elevation-6); /* Enhanced shadow */
+    }
+    .image-container {
+        /* FIX 3: Increased image height for better identification */
+        height: 200px; 
+        background-color: var(--mud-palette-background-grey);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-radius: 12px 12px 0 0; /* Match card corners */
+    }
+    .image-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+</style>
 
-    <MudGrid GutterSize="3">
-        <MudItem xs="12" md="5">
-            <MudCard>
-                <MudCardContent>
-                    <MudSelect T="int" Label="Location" Value="SelectedLocationId" ValueChanged="@(async loc => { SelectedLocationId = loc; await LoadProducts(); })" ValueExpression="() => SelectedLocationId" FullWidth="true" Variant="Variant.Outlined">
-                        <MudSelectItem T="int" Value="0">-- Select Location --</MudSelectItem>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    @if (SelectedLocationId == 0)
+    {
+        @* --- LOCATION SELECTION --- *@
+        <MudGrid Justify="Justify.Center" Class="mt-12">
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard Elevation="4" Class="pa-6" Style="border-radius: 12px;">
+                    <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4">Recording Sales at...</MudText>
+                    <MudSelect T="int" Label="Choose Venue Location" Value="SelectedLocationId" ValueChanged="OnLocationChanged" Variant="Variant.Filled">
+                        <MudSelectItem T="int" Value="0">-- Select Venue --</MudSelectItem>
                         @foreach (var loc in Locations)
                         {
                             <MudSelectItem T="int" Value="@loc.Id">@loc.Name</MudSelectItem>
                         }
                     </MudSelect>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    }
+    else
+    {
+        @* --- THE POS DASHBOARD --- *@
+<MudGrid Spacing="3" Class="px-4">
+    @* 1. TOP HEADER & SEARCH *@
+    <MudItem xs="12">
+        <MudPaper Class="pa-4 d-flex align-center justify-space-between" Elevation="2">
+            <MudText Typo="Typo.h6"><b>@CurrentLocationName Venue</b></MudText>
+            <MudTextField @bind-Value="SearchTerm" 
+                          Placeholder="Start typing to filter..." 
+                          Adornment="Adornment.Start" 
+                          AdornmentIcon="@Icons.Material.Filled.Search" 
+                          Variant="Variant.Outlined" 
+                          Margin="Margin.Dense" 
+                          Immediate="true" 
+                          Style="max-width: 450px;" />
+            <MudButton OnClick="ResetLocation" StartIcon="@Icons.Material.Filled.SwapHoriz">Change Location</MudButton>
+        </MudPaper>
+    </MudItem>
 
-                    <MudSelect T="int" Label="Product" @bind-Value="SelectedProductId" Disabled="@(SelectedLocationId == 0)" FullWidth="true" Class="mt-4" Variant="Variant.Outlined">
-                        <MudSelectItem T="int" Value="0">-- Select Product --</MudSelectItem>
-                        @foreach (var item in AvailableProducts)
+    @* 2. LEFT SIDE: PRODUCT CATALOG (Grid of Cards) *@
+    <MudItem xs="12" md="8" lg="9">
+        <MudGrid GutterSize="3">
+            @foreach (var parent in FilteredProducts)
+            {
+                <MudItem xs="6" sm="4" lg="3">
+                    <MudCard Elevation="2" Class="product-grid-card" @onclick="() => ActiveParent = parent">
+                        <div class="image-container">
+                            <img src="/Images/products/@(parent.ImageFileName ?? "placeholder.png")" 
+                                 alt="@parent.ParentName" 
+                                 onerror="this.src='/Images/products/placeholder.png';" />
+                        </div>
+                        <MudCardContent Class="pa-3">
+                            <MudText Typo="Typo.subtitle2" Align="Align.Center" Style="font-weight: 600; line-height: 1.2;">
+                                @parent.ParentName
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    </MudItem>
+
+    @* 3. RIGHT SIDE: THE SALES CONSOLE (Basket & Totals) *@
+    <MudItem xs="12" md="4" lg="3">
+        @* Sticky positioning ensures the basket stays visible during scrolling *@
+        <div style="position: sticky; top: 24px;">
+            
+            @* --- VARIANT SELECTION (Appears when card is clicked) --- *@
+            @if (ActiveParent != null)
+            {
+                <MudPaper Class="pa-4 mb-4" Elevation="4" Style="border-left: 6px solid var(--mud-palette-primary); background-color: #fcfcfc;">
+                    <div class="d-flex justify-space-between align-center mb-3">
+                        <MudText Typo="Typo.subtitle1"><b>Choose Variant</b></MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => ActiveParent = null" />
+                    </div>
+                    
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        @foreach (var v in ActiveParent.Variants)
                         {
-                            <MudSelectItem T="int" Value="@item.ProductId">@item.ProductName (@item.StockAvailable in stock)</MudSelectItem>
+                            <div class="d-flex align-center mb-3">
+                                <div style="flex-grow: 1;">
+                                    <MudText Typo="Typo.body2"><b>@v.VariantName</b></MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Stock: @v.StockAvailable | @v.Price.ToString("C")</MudText>
+                                </div>
+                                <div style="width: 60px;" class="mr-2">
+                                    <MudNumericField @bind-Value="v.InputQty" Min="0" Max="@v.StockAvailable" Margin="Margin.Dense" Variant="Variant.Text" />
+                                </div>
+                                <MudIconButton Icon="@Icons.Material.Filled.AddShoppingCart" Color="Color.Primary" OnClick="() => AddToCart(v)" />
+                            </div>
                         }
-                    </MudSelect>
+                    </div>
+                </MudPaper>
+            }
 
-                    <MudNumericField @bind-Value="SaleQuantity" Min="1" Label="Quantity to Sell" FullWidth="true" Class="mt-4" Variant="Variant.Outlined" />
-
-                    @if (!string.IsNullOrEmpty(ErrorMessage))
-                    {
-                        <MudAlert Severity="Severity.Error" Dense="true" Class="mt-4">@ErrorMessage</MudAlert>
-                    }
-
-                    <MudButton Type="Button" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4" OnClick="ProcessSale" Disabled="@(SelectedProductId == 0 || SaleQuantity <= 0)">Complete Sale</MudButton>
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
-
-        <MudItem xs="12" md="7">
-            <MudCard>
+            @* --- PENDING SALE (The Cart) --- *@
+            <MudCard Elevation="3">
                 <MudCardHeader>
-                    <MudText Typo="Typo.h6">Success Log</MudText>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6"><b>Pending Sale</b></MudText>
+                    </CardHeaderContent>
                 </MudCardHeader>
-                <MudCardContent>
-                    @* FIX: Added T="string" to MudList and MudListItem *@
-                    <MudList T="string" Dense="true">
-                        @foreach (var log in SaleLogs)
-                        {
-                            <MudListItem T="string">
-                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="me-2" />
-                                @log
-                            </MudListItem>
-                        }
-                    </MudList>
+                <MudCardContent Style="min-height: 150px; max-height: 400px; overflow-y: auto;">
+                    @if (!Cart.Any())
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="py-8">No items added yet</MudText>
+                    }
+                    @foreach (var item in Cart)
+                    {
+                        <div class="d-flex justify-space-between align-center mb-2">
+                            <MudText Typo="Typo.caption" Style="flex-grow: 1;">@item.ProductName (x @item.Quantity)</MudText>
+                            <MudText Typo="Typo.caption" Class="mx-2">@((item.Price * item.Quantity).ToString("C"))</MudText>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => Cart.Remove(item)" />
+                        </div>
+                    }
+                    
+                    <MudDivider Class="my-4" />
+                    <div class="d-flex justify-space-between">
+                        <MudText Typo="Typo.h6">Total:</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Success"><b>@Cart.Sum(x => x.Price * x.Quantity).ToString("C")</b></MudText>
+                    </div>
                 </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               FullWidth="true" 
+                               Size="Size.Large" 
+                               OnClick="ProcessCheckout" 
+                               Disabled="!Cart.Any()">
+                        Complete Transaction
+                    </MudButton>
+                </MudCardActions>
             </MudCard>
-        </MudItem>
-    </MudGrid>
-
-    <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mt-4">
-        <MudText Typo="Typo.h6">Today's Sales History</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Warning" Href="@($"/sales/reconcile/{SelectedLocationId}")" Disabled="@(SelectedLocationId == 0)">
-            Manual End of Day Entry
-        </MudButton>
-    </MudStack>
-
-    <MudCard Class="mt-3">
-        @* FIX: Added T="Sale" to MudTable *@
-      <MudTable T="Sale" Items="RecentSales" Dense="true" Hover="true" Class="mb-0">
-    <HeaderContent>
-        <MudTh>Time</MudTh>
-        <MudTh>Product</MudTh>
-        <MudTh>Qty</MudTh>
-        <MudTh>Location</MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd>@context.SaleDate.ToLocalTime().ToString("t")</MudTd>
-        @* Add ?? string.Empty to ensure the return type is always a string *@
-        <MudTd>@(context.Product?.Name ?? "Unknown Product")</MudTd>
-        <MudTd>@context.QuantitySold</MudTd>
-        <MudTd>@(context.Location?.Name ?? "Unknown Location")</MudTd>
-    </RowTemplate>
-    <NoRecordsContent>
-        <MudText Typo="Typo.body2" Color="Color.Secondary">No sales recorded yet today.</MudText>
-    </NoRecordsContent>
-</MudTable>
-
-    </MudCard>
+        </div>
+    </MudItem>
+</MudGrid>
+    }
 </MudContainer>
 
 @code {
-    private int SelectedLocationId;
-    private int SelectedProductId;
-    private int SaleQuantity = 1;
-    private string? ErrorMessage;
-    
+    public static int SelectedLocationId;
+    private string SearchTerm = "";
+    private SalesParentDTO? ActiveParent;
+
     private List<Location> Locations = new();
-    private List<ProductStockDTO> AvailableProducts = new();
-    private List<string> SaleLogs = new();
-    private List<Sale> RecentSales = new();
+    private List<SalesParentDTO> MasterProducts = new();
+    private List<SalesCartItem> Cart = new();
+
+    private string CurrentLocationName => Locations.FirstOrDefault(l => l.Id == SelectedLocationId)?.Name ?? "";
+
+    private IEnumerable<SalesParentDTO> FilteredProducts => 
+        string.IsNullOrEmpty(SearchTerm) ? MasterProducts : MasterProducts.Where(p => p.ParentName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {
         using var db = await DbFactory.CreateDbContextAsync();
-        Locations = await db.Locations.OrderBy(l => l.Name).ToListAsync();
-        await LoadRecentSales();
+        Locations = await db.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
+        if (SelectedLocationId > 0) await LoadProducts();
     }
 
-    private async Task LoadRecentSales()
+    private async Task OnLocationChanged(int id)
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-        var today = DateTime.UtcNow.Date;
+        SelectedLocationId = id;
+        await LoadProducts();
+    }
+
+    private void ResetLocation() => SelectedLocationId = 0;
+
+  private async Task LoadProducts()
+{
+    using var db = await DbFactory.CreateDbContextAsync();
+    
+    var stockAtLocation = await db.ProductLocations
+        .Include(pl => pl.Product).ThenInclude(p => p.Image)
+        // We include ParentProduct and its Image for variants
+        .Include(pl => pl.Product).ThenInclude(p => p.ParentProduct!).ThenInclude(pp => pp.Image)
+        .Where(pl => pl.LocationId == SelectedLocationId && pl.Quantity > 0)
+        .ToListAsync();
+
+    MasterProducts = stockAtLocation
+        .GroupBy(s => s.Product.ParentProductId ?? s.Product.Id) 
+        .Select(group => {
+            var firstItem = group.First().Product;
+            var isChild = firstItem.ParentProductId != null;
+            
+            // FIX: Using ! to tell the compiler we know what we're doing, 
+            // but still providing a "??" fallback just in case the DB has an orphaned child.
+            string pName = isChild 
+                ? (firstItem.ParentProduct?.Name ?? firstItem.Name) 
+                : firstItem.Name;
+
+            string? pImg = isChild 
+                ? (firstItem.ParentProduct?.Image?.FileName ?? firstItem.Image?.FileName) 
+                : firstItem.Image?.FileName;
+
+            return new SalesParentDTO {
+                ParentName = pName,
+                ImageFileName = pImg,
+                Variants = group.Select(v => new SalesVariantDTO {
+                    Id = v.ProductId,
+                    VariantName = GenerateVariantName(v.Product),
+                    StockAvailable = v.Quantity,
+                    Price = v.Product.Price,
+                    FullName = v.Product.Name
+                }).OrderBy(v => v.VariantName).ToList()
+            };
+        })
+        .OrderBy(p => p.ParentName)
+        .ToList();
+}
+
+    private static string GenerateVariantName(Product p)
+{
+    var parts = new List<string>();
+    if (p.Size.HasValue && p.Size != ProductSize.NA) parts.Add(p.Size.ToString()!);
+    if (p.Color.HasValue && p.Color != ProductColor.NA) parts.Add(p.Color.ToString()!);
+    
+    // If it's a child but has no specific size/color info, use the material or just "Default"
+    if (!parts.Any()) return !string.IsNullOrEmpty(p.Material) ? p.Material : "Standard Edition";
+
+    return string.Join(" / ", parts);
+}
+
+    private void AddToCart(SalesVariantDTO v)
+    {
+        var existing = Cart.FirstOrDefault(c => c.ProductId == v.Id);
+        int qtyInCart = existing?.Quantity ?? 0;
+
+        // Strict Stock Check: Prevents overselling
+        if (qtyInCart + v.InputQty > v.StockAvailable) return;
+
+        if (existing != null) existing.Quantity += v.InputQty;
+        else Cart.Add(new SalesCartItem { ProductId = v.Id, ProductName = v.FullName, Price = v.Price, Quantity = v.InputQty });
         
-        RecentSales = await db.Sales
-            .Include(s => s.Product)
-            .Include(s => s.Location)
-            .Where(s => s.SaleDate >= today && !s.IsManualAdjustment)
-            .OrderByDescending(s => s.SaleDate)
-            .Take(10)
-            .ToListAsync();
+        v.InputQty = 0; 
     }
 
-    private async Task LoadProducts()
+    private async Task ProcessCheckout()
     {
-        if (SelectedLocationId == 0) return;
-
         using var db = await DbFactory.CreateDbContextAsync();
-        AvailableProducts = await db.ProductLocations
-            .Where(pl => pl.LocationId == SelectedLocationId && pl.Quantity > 0)
-            .Select(pl => new ProductStockDTO
+        foreach (var item in Cart)
+        {
+            var stock = await db.ProductLocations.FirstOrDefaultAsync(pl => pl.ProductId == item.ProductId && pl.LocationId == SelectedLocationId);
+            if (stock != null)
             {
-                ProductId = pl.ProductId,
-                ProductName = pl.Product.Name,
-                StockAvailable = pl.Quantity
-            }).ToListAsync();
-    }
-
-    private async Task ProcessSale()
-    {
-        ErrorMessage = null;
-        using var db = await DbFactory.CreateDbContextAsync();
-
-        var stockRecord = await db.ProductLocations
-            .FirstOrDefaultAsync(pl => pl.LocationId == SelectedLocationId && pl.ProductId == SelectedProductId);
-
-        if (stockRecord == null || stockRecord.Quantity < SaleQuantity)
-        {
-            ErrorMessage = "Insufficient stock!";
-            return;
+                stock.Quantity -= item.Quantity;
+                db.Sales.Add(new Sale { 
+                    ProductId = item.ProductId, 
+                    LocationId = SelectedLocationId, 
+                    QuantitySold = item.Quantity, 
+                    UnitPriceAtSale = item.Price,
+                    SaleDate = DateTime.UtcNow 
+                });
+            }
         }
-
-        stockRecord.Quantity -= SaleQuantity;
-        stockRecord.LastUpdated = DateTime.UtcNow;
-
-        var product = await db.Products.FindAsync(SelectedProductId);
-        db.Sales.Add(new Sale
-        {
-            ProductId = SelectedProductId,
-            LocationId = SelectedLocationId,
-            QuantitySold = SaleQuantity,
-            UnitPriceAtSale = product?.Price ?? 0,
-            SaleDate = DateTime.UtcNow,
-            IsManualAdjustment = false
-        });
-
         await db.SaveChangesAsync();
-
-        SaleLogs.Insert(0, $"{DateTime.Now.ToShortTimeString()}: Sold {SaleQuantity}x {product?.Name}");
-        
-        SaleQuantity = 1;
-        await LoadProducts(); 
-        await LoadRecentSales();
+        Cart.Clear();
+        ActiveParent = null;
+        await LoadProducts();
     }
 
-    public class ProductStockDTO
-    {
+    public class SalesParentDTO {
+        public string ParentName { get; set; } = "";
+        public string? ImageFileName { get; set; }
+        public List<SalesVariantDTO> Variants { get; set; } = new();
+    }
+
+    public class SalesVariantDTO {
+        public int Id { get; set; }
+        public string VariantName { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public int StockAvailable { get; set; }
+        public int InputQty { get; set; } 
+        public decimal Price { get; set; }
+    }
+
+    public class SalesCartItem {
         public int ProductId { get; set; }
         public string ProductName { get; set; } = "";
-        public int StockAvailable { get; set; }
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
     }
 }

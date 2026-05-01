@@ -16,6 +16,8 @@ public class ProductFormModel
 
     public string? Description { get; set; }
     public int? ParentProductId { get; set; }
+
+    public string? ImageFileName { get; set; }
     
     // Only define these once!
     public ProductSize? Size { get; set; } = ProductSize.NA;

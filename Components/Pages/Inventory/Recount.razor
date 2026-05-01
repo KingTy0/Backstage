@@ -1,0 +1,208 @@
+@page "/inventory/recount"
+@page "/inventory/recount/{UrlLocationId:int}"
+@using Microsoft.EntityFrameworkCore
+@using PuppetFestAPP.Web.Data
+@using PuppetFestAPP.Web.Models
+@using PuppetFestAPP.Web.Components.Pages.Sales
+@rendermode InteractiveServer
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+        <div>
+            <MudText Typo="Typo.h4">Physical Inventory Recount</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+                Current Location: <strong>@(Locations.FirstOrDefault(l => l.Id == SelectedLocationId)?.Name ?? "None Selected")</strong>
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Success" 
+                   Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="SaveAdjustments" 
+                   Disabled="@(SelectedLocationId == 0 || AdjustmentList == null)">
+            Commit & Reconcile
+        </MudButton>
+    </MudStack>
+
+   <AuthorizeView Roles="Admin, InventoryManager">
+    <Authorized>
+        <MudPaper Elevation="1" Class="pa-4 mb-6">
+            <MudGrid AlignItems="Center">
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int" Label="Change Location (Admin/Manager Only)" 
+                               @bind-Value="SelectedLocationId" 
+                               @bind-Value:after="LoadLocationStock"
+                               Variant="Variant.Outlined" 
+                               AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem T="int" Value="0">-- Select a Location --</MudSelectItem>
+                        @foreach (var loc in Locations)
+                        {
+                            <MudSelectItem T="int" Value="@loc.Id">@loc.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    @if (SelectedLocationId > 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="true">
+                            Admin Mode: You are recounting stock for <strong>@(Locations.FirstOrDefault(l => l.Id == SelectedLocationId)?.Name)</strong>.
+                        </MudAlert>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </Authorized>
+</AuthorizeView>
+
+    @if (SelectedLocationId > 0)
+    {
+        <MudPaper Elevation="1">
+            <MudTable Items="AdjustmentList" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" Loading="@isProcessing">
+                <HeaderContent>
+                    <MudTh>Product</MudTh>
+                    <MudTh Style="text-align:center">System Stock</MudTh>
+                    <MudTh Style="text-align:center">Actual Physical Count</MudTh>
+                    <MudTh Style="text-align:center">Discrepancy</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Product">
+                        <MudText Typo="Typo.body1">@context.ProductName</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.VariantDetails</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="System Stock" Style="text-align:center">
+                        @context.SystemQuantity
+                    </MudTd>
+                    <MudTd DataLabel="Actual Physical" Style="text-align:center">
+                        <MudNumericField @bind-Value="context.NewQuantity" 
+                                        Variant="Variant.Outlined" 
+                                        Margin="Margin.Dense"
+                                        Style="width: 100px; margin: auto;"
+                                        Min="0" />
+                    </MudTd>
+                    <MudTd DataLabel="Discrepancy" Style="text-align:center">
+                        @{
+                            var diff = context.NewQuantity - context.SystemQuantity;
+                            if (diff == 0) { <MudText Color="Color.Default">-</MudText> }
+                            else if (diff > 0) { <MudText Color="Color.Success">+@diff</MudText> }
+                            else { <MudText Color="Color.Error">@diff</MudText> }
+                        }
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-12 d-flex flex-column align-center justify-center" Outlined="true">
+           <MudIcon Icon="@Icons.Material.Filled.Storefront" Size="Size.Large" Color="Color.Default" />
+            <MudText Color="Color.Secondary">Select a location above to begin the recount.</MudText>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public int? UrlLocationId { get; set; }
+    private int SelectedLocationId;
+    private List<Location> Locations = new();
+    private List<AdjustmentItem> AdjustmentList = new();
+    private bool isProcessing = false;
+
+    protected override async Task OnInitializedAsync()
+{
+    using var context = await DbFactory.CreateDbContextAsync();
+    Locations = await context.Locations.OrderBy(l => l.Name).ToListAsync();
+
+    if (UrlLocationId.HasValue && UrlLocationId > 0)
+    {
+        SelectedLocationId = UrlLocationId.Value;
+    }
+    else if (Create.SelectedLocationId > 0) // Changed from Sell to Create
+    {
+        SelectedLocationId = Create.SelectedLocationId;
+    }
+
+    if (SelectedLocationId > 0)
+    {
+        await LoadLocationStock();
+    }
+}
+
+    private async Task LoadLocationStock()
+    {
+        if (SelectedLocationId == 0)
+        {
+            AdjustmentList.Clear();
+            return;
+        }
+
+        isProcessing = true;
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        // 1. Get ONLY the stock records that exist for this location
+        // 2. Include the Product data so we have the Names/Sizes
+        var currentStock = await context.ProductLocations
+            .Include(pl => pl.Product) 
+            .Where(pl => pl.LocationId == SelectedLocationId)
+            .ToListAsync();
+
+        // 3. Map ONLY those existing records to the adjustment list
+        AdjustmentList = currentStock.Select(pl => new AdjustmentItem
+        {
+            ProductId = pl.ProductId,
+            ProductName = pl.Product.Name,
+            VariantDetails = $"{pl.Product.Size} / {pl.Product.Color}",
+            SystemQuantity = pl.Quantity,
+            NewQuantity = pl.Quantity
+        }).OrderBy(x => x.ProductName).ToList();
+        
+        isProcessing = false;
+    }
+
+    private async Task SaveAdjustments()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        foreach (var item in AdjustmentList)
+        {
+            var stockRecord = await context.ProductLocations
+                .FirstOrDefaultAsync(pl => pl.LocationId == SelectedLocationId && pl.ProductId == item.ProductId);
+
+            if (item.NewQuantity == 0 && stockRecord != null)
+            {
+                context.ProductLocations.Remove(stockRecord);
+            }
+            else if (item.NewQuantity != item.SystemQuantity)
+            {
+                if (stockRecord != null)
+                {
+                    stockRecord.Quantity = item.NewQuantity;
+                    stockRecord.LastUpdated = DateTime.UtcNow;
+                }
+                else if (item.NewQuantity > 0)
+                {
+                    context.ProductLocations.Add(new ProductLocation
+                    {
+                        LocationId = SelectedLocationId,
+                        ProductId = item.ProductId,
+                        Quantity = item.NewQuantity,
+                        LastUpdated = DateTime.UtcNow
+                    });
+                }
+            }
+        }
+
+        await context.SaveChangesAsync();
+        Navigation.NavigateTo("/inventory/recount", forceLoad: true);
+    }
+
+    public class AdjustmentItem
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = "";
+        public string VariantDetails { get; set; } = "";
+        public int SystemQuantity { get; set; }
+        public int NewQuantity { get; set; }
+    }
+}

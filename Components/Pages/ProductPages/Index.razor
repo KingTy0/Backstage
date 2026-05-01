@@ -28,17 +28,19 @@
         @* Using FULL NAMESPACE to bypass the alias bug and fix 'prod' scope errors *@
         <Microsoft.AspNetCore.Components.QuickGrid.QuickGrid Items="FilteredProducts" Pagination="pagination">
             
-            <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Image" Context="prod">
-                @if (prod.Image != null && !string.IsNullOrEmpty(prod.Image.FileName))
-                {
-                    <img class="rounded shadow-sm" src="/Images/Products/@prod.Image.FileName" 
-                         style="width: 50px; height: 50px; object-fit: cover;"/>
-                }
-                else
-                {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">No Image</MudText>
-                }
-            </Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
+          <Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn Title="Image" Context="prod">
+    @if (prod.Image != null && !string.IsNullOrEmpty(prod.Image.FileName))
+    {
+        <img class="rounded shadow-sm" 
+             src="/images/products/@prod.Image.FileName" 
+             style="width: 50px; height: 50px; object-fit: cover;" 
+             alt="@prod.Name" />
+    }
+    else
+    {
+        <MudText Typo="Typo.caption" Color="Color.Secondary">No Image</MudText>
+    }
+</Microsoft.AspNetCore.Components.QuickGrid.TemplateColumn>
 
             <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Property="@(p => p.Name)" Sortable="true" Title="Product Name" />
             
@@ -79,15 +81,19 @@
 
     Microsoft.AspNetCore.Components.QuickGrid.PaginationState pagination = new() { ItemsPerPage = 20 };
 
-    protected override async Task OnInitializedAsync()
+   protected override async Task OnInitializedAsync()
     {
+        // 1. Open the connection
         using var db = await DbFactory.CreateDbContextAsync();
+
+        // 2. Fetch the data into a List (This fixes the 'No Image' by using Include)
         var data = await db.Products
             .Include(p => p.Category)
             .Include(p => p.Image)
             .Where(p => p.ParentProductId == null)
             .ToListAsync();
             
+        // 3. Convert that list back to IQueryable so QuickGrid and FilteredProducts are happy
         Products = data.AsQueryable();
     }
 }

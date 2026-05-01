@@ -12,11 +12,12 @@
     <h1>Create @(parentId.HasValue ? "Variant" : "New Product")</h1>
     <hr />
 
-    <EditForm Model="Form" OnValidSubmit="AddProduct" FormName="createProduct" Enhance>
+    <EditForm Model="Form" OnValidSubmit="AddProduct" FormName="createProduct" >
         <DataAnnotationsValidator />
         <ValidationSummary class="text-danger" />
         
         <input type="hidden" @bind="Form.ParentProductId" />
+        <InputText @bind-Value="uploadedFileName" style="display:none"/>
 
         <div class="mb-3">
             <label class="form-label">Name</label>
@@ -68,6 +69,13 @@
         <div class="mb-3">
             <label class="form-label">Product Image</label>
             <InputFile OnChange="LoadFiles" class="form-control" />
+            @if (!string.IsNullOrEmpty(uploadedFileName))
+            {
+                <div class="mt-2">
+                    <img src="/images/products/@uploadedFileName" style="height:100px; width:auto; border-radius:8px;" />
+                    <p class="text-success">Image uploaded successfully!</p>
+                </div>
+            }
             @if (isUploading) { <p class="text-info">Uploading...</p> }
         </div>
 
@@ -107,49 +115,68 @@
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
-        isUploading = true;
         var file = e.File;
         if (file != null)
         {
-            // Set a unique name to avoid overwriting
-            uploadedFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.Name);
-            var path = Path.Combine(Environment.WebRootPath, "images", "products", uploadedFileName);
+            isUploading = true;
+            // Generate name once
+            var newName = Guid.NewGuid().ToString() + Path.GetExtension(file.Name);
+            
+            // LOCK IT INTO THE FORM IMMEDIATELY
+            Form.ImageFileName = newName;
+            uploadedFileName = newName; 
 
-            // Create directory if it doesn't exist
+            var path = Path.Combine(Environment.WebRootPath, "images", "products", newName);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
             await using FileStream fs = new(path, FileMode.Create);
             await file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 10).CopyToAsync(fs);
+            
+            isUploading = false;
+            StateHasChanged();
         }
-        isUploading = false;
     }
 
-    private async Task AddProduct()
+   private async Task AddProduct()
+{
+    if (Form.CategoryId == 0) return;
+
+    using var context = await DbFactory.CreateDbContextAsync();
+    int? finalImageId = null;
+
+    var fileNameToUse = Form.ImageFileName ?? uploadedFileName;
+
+    // Use the local variable that is now 'synced' by the hidden InputText
+    if (!string.IsNullOrEmpty(uploadedFileName))
     {
-        if (Form.CategoryId == 0) return;
-
-        using var context = await DbFactory.CreateDbContextAsync();
-
-        var newProduct = new Product
-        {
-            Name = Form.Name,
-            Price = Form.Price,
-            CategoryId = Form.CategoryId,
-            ParentProductId = Form.ParentProductId ?? parentId, 
-            Size = Form.Size ?? ProductSize.NA,
-            Color = Form.Color ?? ProductColor.NA,
-            DateAdded = DateTime.Now,
-            IsActive = true,
-            Description = Form.Description ?? "",
-            // If we uploaded an image, we'd save the ID here
-            // For now, let's just make sure the variant links
+        var newImg = new PuppetFestAPP.Web.Models.Image 
+        { 
+            FileName = uploadedFileName,
+            AltText = Form.Name 
         };
-
-        context.Products.Add(newProduct);
-        await context.SaveChangesAsync();
         
-        NavigationManager.NavigateTo(newProduct.ParentProductId.HasValue 
-            ? $"/products/details/{newProduct.ParentProductId}" 
-            : "/products");
+        context.Images.Add(newImg); 
+        await context.SaveChangesAsync(); 
+        finalImageId = newImg.Id; 
     }
+
+    var newProduct = new Product
+    {
+        Name = Form.Name,
+        Price = Form.Price,
+        CategoryId = Form.CategoryId,
+        ParentProductId = Form.ParentProductId ?? parentId, 
+        Size = Form.Size ?? ProductSize.NA,
+        Color = Form.Color ?? ProductColor.NA,
+        DateAdded = DateTime.Now,
+        IsActive = true,
+        Description = Form.Description ?? "",
+        ImageId = finalImageId 
+    };
+
+    context.Products.Add(newProduct);
+    await context.SaveChangesAsync();
+    
+    NavigationManager.NavigateTo("/products");
+}
 }
