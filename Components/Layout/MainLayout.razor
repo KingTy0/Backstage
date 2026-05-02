@@ -1,6 +1,6 @@
 ﻿@inherits LayoutComponentBase
 
-<MudThemeProvider />
+<MudThemeProvider Theme="_BackstageColorPallete"/>
 @* Add the rendermode only to the providers *@
 <MudPopoverProvider @rendermode="InteractiveServer" />
 <MudDialogProvider @rendermode="InteractiveServer" />
@@ -29,3 +29,41 @@
     <span class="dismiss">🗙</span>
 </div>
 
+@code {
+        private MudTheme _BackstageColorPallete = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#5D1E21",
+            PrimaryDarken = "#4D191C", 
+            PrimaryLighten = "#AD383E",
+            
+            Secondary = "#154230",
+            SecondaryDarken = "#0C271C",
+            SecondaryLighten = "#257450",
+
+            Tertiary = "#A6824A",
+            TertiaryDarken = "#7B6137",
+            TertiaryLighten = "#C0A272",
+
+            HoverOpacity = 0.06, 
+
+            Black = "#101111",
+            White = "#FFFFFF",
+            
+            // Gray names changed to 'Lines', 'Divider', or 'Surface'
+            LinesDefault = "#9E9E9E",
+            LinesInputs = "#BDBDBD",
+            Divider = "#E0E0E0",
+            DrawerBackground = "#FFFFFF",
+
+            Info = "#2196F3",
+            Success = "#00C853",
+            Warning = "#FF9800",
+            Error = "#F44336",
+            
+            AppbarBackground = "#5D1E21",
+            AppbarText = "#FFFFFF"
+        },
+    };
+}
