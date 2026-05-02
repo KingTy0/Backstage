@@ -69,7 +69,143 @@ html, body {
     font-family: var(--main-font)
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1 {
     font-family: var(--title-font);
 }
 
+h2, h3, h4, h5, h6 {
+    font-family: var(--subtitle-font);
+}
+
+/*Desktop (default, ≥ 391 px)*/
+
+h1 {
+  font-weight: 400; 
+  font-size: 40px;
+  line-height: 1.25; 
+}
+
+h2 {
+  font-weight: 600; 
+  font-size: 30px;
+  line-height: 1.35; 
+}
+
+h3 {
+  font-weight: 600;  
+  font-size: 24px;
+  line-height: 1.50; 
+}
+
+/* ---------- Body / UI text --------------------------------- */
+p .subtitle-1 {
+  font-weight: 500;  
+  font-size: 18px;
+  line-height: 1.80;  
+}
+
+p .subtitle-2 {
+  font-weight: 500; 
+  font-size: 16px;
+  line-height: 1.75;  
+}
+
+p .body-1 {
+  font-weight: 400; 
+  font-size: 18px;
+  line-height: 1.45; 
+}
+
+p .body-2 {
+  font-weight: 400; 
+  font-size: 16px;
+  line-height: 1.50; 
+}
+
+/* ---------- Input / button -------------------------------- */
+input,
+textarea {
+  font-weight: 400; 
+  font-size: 18px;
+  line-height: 1.35; 
+}
+
+button {
+  font-weight: 500; 
+  font-size: 16px;
+  line-height: 1.75;  
+}
+
+/* ---------- Small‑text helpers ----------------------------- */
+p .caption {
+  font-weight: 400;  
+  font-size: 14px;
+  line-height: 1.45;  
+}
+
+p .overline {
+  font-weight: 400; 
+  font-size: 14px;
+  line-height: 2.75; 
+}
+
+/*Typography – Mobile (≤ 390 px)*/
+@media (max-width: 390px) {
+  /* ---------- Header styles -------------------------------- */
+  h1 {
+    font-size: 32px;
+    line-height: 1.25; 
+  }
+
+  h2 {
+    font-size: 24px;
+    line-height: 1.35; 
+  }
+
+  h3 {
+    font-size: 20px;
+    line-height: 1.35; 
+  }
+
+  /* ---------- Body / UI text ------------------------------ */
+  p .subtitle-1 {
+    font-size: 18px;
+    line-height: 1.35; 
+  }
+
+  p .subtitle-2 {
+    font-size: 14px;
+    line-height: 1.45;  
+  }
+
+  p .body-1 {
+    font-size: 16px;
+    line-height: 1.40;  
+  }
+
+  p .body-2 {
+    font-size: 14px;
+    line-height: 1.45;  
+  }
+
+  input,
+  textarea {
+    font-size: 16px;
+    line-height: 1.25; 
+  }
+
+  button {
+    font-size: 14px;
+    line-height: 1.75; 
+  }
+
+  p .caption {
+    font-size: 12px;
+    line-height: 1.35; 
+  }
+
+  p .overline {
+    font-size: 12px;
+    line-height: 2.70; 
+  }
+}
