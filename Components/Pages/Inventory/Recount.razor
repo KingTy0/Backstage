@@ -1,208 +1,245 @@
 @page "/inventory/recount"
-@page "/inventory/recount/{UrlLocationId:int}"
 @using Microsoft.EntityFrameworkCore
 @using PuppetFestAPP.Web.Data
 @using PuppetFestAPP.Web.Models
-@using PuppetFestAPP.Web.Components.Pages.Sales
 @rendermode InteractiveServer
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager Navigation
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
-        <div>
-            <MudText Typo="Typo.h4">Physical Inventory Recount</MudText>
-            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
-                Current Location: <strong>@(Locations.FirstOrDefault(l => l.Id == SelectedLocationId)?.Name ?? "None Selected")</strong>
-            </MudText>
-        </div>
-        <MudButton Variant="Variant.Filled" 
-                   Color="Color.Success" 
-                   Size="Size.Large"
-                   StartIcon="@Icons.Material.Filled.Save"
-                   OnClick="SaveAdjustments" 
-                   Disabled="@(SelectedLocationId == 0 || AdjustmentList == null)">
-            Commit & Reconcile
-        </MudButton>
-    </MudStack>
-
-   <AuthorizeView Roles="Admin, InventoryManager">
-    <Authorized>
-        <MudPaper Elevation="1" Class="pa-4 mb-6">
-            <MudGrid AlignItems="Center">
-                <MudItem xs="12" md="6">
-                    <MudSelect T="int" Label="Change Location (Admin/Manager Only)" 
-                               @bind-Value="SelectedLocationId" 
-                               @bind-Value:after="LoadLocationStock"
-                               Variant="Variant.Outlined" 
-                               AnchorOrigin="Origin.BottomCenter">
-                        <MudSelectItem T="int" Value="0">-- Select a Location --</MudSelectItem>
-                        @foreach (var loc in Locations)
-                        {
-                            <MudSelectItem T="int" Value="@loc.Id">@loc.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    @if (SelectedLocationId > 0)
-                    {
-                        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="true">
-                            Admin Mode: You are recounting stock for <strong>@(Locations.FirstOrDefault(l => l.Id == SelectedLocationId)?.Name)</strong>.
-                        </MudAlert>
-                    }
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
-    </Authorized>
-</AuthorizeView>
-
-    @if (SelectedLocationId > 0)
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+    @if (SelectedLocationId == 0)
     {
-        <MudPaper Elevation="1">
-            <MudTable Items="AdjustmentList" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" Loading="@isProcessing">
-                <HeaderContent>
-                    <MudTh>Product</MudTh>
-                    <MudTh Style="text-align:center">System Stock</MudTh>
-                    <MudTh Style="text-align:center">Actual Physical Count</MudTh>
-                    <MudTh Style="text-align:center">Discrepancy</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Product">
-                        <MudText Typo="Typo.body1">@context.ProductName</MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.VariantDetails</MudText>
-                    </MudTd>
-                    <MudTd DataLabel="System Stock" Style="text-align:center">
-                        @context.SystemQuantity
-                    </MudTd>
-                    <MudTd DataLabel="Actual Physical" Style="text-align:center">
-                        <MudNumericField @bind-Value="context.NewQuantity" 
-                                        Variant="Variant.Outlined" 
-                                        Margin="Margin.Dense"
-                                        Style="width: 100px; margin: auto;"
-                                        Min="0" />
-                    </MudTd>
-                    <MudTd DataLabel="Discrepancy" Style="text-align:center">
-                        @{
-                            var diff = context.NewQuantity - context.SystemQuantity;
-                            if (diff == 0) { <MudText Color="Color.Default">-</MudText> }
-                            else if (diff > 0) { <MudText Color="Color.Success">+@diff</MudText> }
-                            else { <MudText Color="Color.Error">@diff</MudText> }
+        @* --- STEP 1: LOCATION SELECTION --- *@
+        <div class="text-center">
+            <MudText Typo="Typo.h3" Style="font-family: var(--title-font); font-weight: bold;">Inventory Recount</MudText>
+            <MudText Typo="Typo.body1" Class="mt-4 mb-10" Color="Color.Secondary">
+                Select your location and manually sync inventory by entering actual counted quantities to match what's in the system.
+            </MudText>
+
+            <MudText Align="Align.Left" Typo="Typo.subtitle1" Class="mb-2"><b>Select a location to continue:</b></MudText>
+            <MudSelect T="int" Value="SelectedLocationId" ValueChanged="OnLocationChanged" 
+                       Variant="Variant.Outlined" Placeholder="Select a location" AnchorOrigin="Origin.BottomCenter">
+                @foreach (var loc in Locations)
+                {
+                    <MudSelectItem T="int" Value="@loc.Id">@loc.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" 
+                       Size="Size.Large" Class="mt-8 py-3" 
+                       Disabled="@(SelectedLocationId == 0)" EndIcon="@Icons.Material.Filled.ArrowForward">
+                CONTINUE
+            </MudButton>
+        </div>
+    }
+    else if (!ShowSummary)
+    {
+        @* --- STEP 2: PHYSICAL COUNT LIST --- *@
+        <MudLink OnClick="ResetLocation" Color="Color.Primary" Underline="Underline.None" Class="d-flex align-center mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" Class="mr-1"/> BACK
+        </MudLink>
+
+        <MudText Typo="Typo.h4" Style="font-family: var(--title-font); font-weight: bold;">Inventory Recount</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            Manually sync inventory by entering actual counted quantities to match what's in the system.
+        </MudText>
+
+        <MudChip T="string" Icon="@Icons.Material.Filled.TheaterComedy" Color="Color.Primary" Class="mb-6 px-4">
+            @CurrentLocationName
+        </MudChip>
+
+        <div class="d-flex gap-2 mb-6">
+            <MudTextField @bind-Value="SearchTerm" Placeholder="Search for an item" 
+                          Variant="Variant.Filled" Adornment="Adornment.End" 
+                          AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense" />
+            <MudSelect T="string" Label="Filter" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 120px;">
+                <MudSelectItem Value="@("All")" />
+            </MudSelect>
+        </div>
+
+        @foreach (var parent in FilteredProducts)
+        {
+            <MudPaper Outlined="true" Class="mb-2 overflow-hidden">
+                <MudExpansionPanel DisableGutters="true">
+                    <TitleContent>
+                        <div class="d-flex align-center py-2">
+                            <MudAvatar Variant="Variant.Outlined" Square="true" Size="Size.Large" Class="mr-3">
+                                <MudImage Src="@($"/Images/products/{parent.ImageFileName ?? "placeholder.png"}")" />
+                            </MudAvatar>
+                            <div class="flex-grow-1">
+                                <MudText Typo="Typo.body1"><b>@parent.ParentName</b></MudText>
+                            </div>
+                        </div>
+                    </TitleContent>
+                    <ChildContent>
+                        <div class="pa-2 grey lighten-4 d-flex justify-space-between px-4">
+                            <MudText Typo="Typo.caption"><b>Variation</b></MudText>
+                            <div class="d-flex gap-4">
+                                <MudText Typo="Typo.caption"><b>Inventory</b></MudText>
+                                <MudText Typo="Typo.caption" Style="width: 60px;" Align="Align.Center"><b>Actual Amt</b></MudText>
+                            </div>
+                        </div>
+                        <MudDivider />
+                        @foreach (var v in parent.Variants)
+                        {
+                            <div class="d-flex align-center justify-space-between pa-4 border-bottom">
+                                <MudText Typo="Typo.body2">@v.VariantName</MudText>
+                                <div class="d-flex align-center gap-8">
+                                    <MudText Typo="Typo.body2">@v.SystemQty</MudText>
+                                    <div style="width: 80px;">
+                                        <MudNumericField @bind-Value="v.ActualQty" Min="0" 
+                                                       Margin="Margin.Dense" Variant="Variant.Outlined" />
+                                    </div>
+                                </div>
+                            </div>
                         }
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-        </MudPaper>
+                    </ChildContent>
+                </MudExpansionPanel>
+            </MudPaper>
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" 
+                   Size="Size.Large" Class="mt-10 py-3" OnClick="() => ShowSummary = true">
+            CONTINUE <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Class="ml-2"/>
+        </MudButton>
     }
     else
     {
-        <MudPaper Class="pa-12 d-flex flex-column align-center justify-center" Outlined="true">
-           <MudIcon Icon="@Icons.Material.Filled.Storefront" Size="Size.Large" Color="Color.Default" />
-            <MudText Color="Color.Secondary">Select a location above to begin the recount.</MudText>
-        </MudPaper>
+        @* --- STEP 3: RECOUNT SUMMARY --- *@
+        <MudLink OnClick="() => ShowSummary = false" Color="Color.Primary" Underline="Underline.None" Class="d-flex align-center mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" Class="mr-1"/> BACK
+        </MudLink>
+
+        <MudText Typo="Typo.h4" Style="font-family: var(--title-font); font-weight: bold;">
+            <MudIcon Icon="@Icons.Material.Filled.Assignment" Class="mr-2"/> Recount Summary
+        </MudText>
+
+        <MudChip T="string" Icon="@Icons.Material.Filled.TheaterComedy" Color="Color.Primary" Class="mt-4 mb-6">
+            @CurrentLocationName
+        </MudChip>
+
+        <MudText Typo="Typo.subtitle1" Class="mb-4"><b>Remaining Inventory</b></MudText>
+
+        @foreach (var parent in MasterProducts.Where(p => p.Variants.Any(v => v.ActualQty != v.SystemQty || v.ActualQty > 0)))
+        {
+            <MudPaper Class="pa-4 mb-3" Elevation="0" Style="background-color: #F5F5F5;">
+                 <div class="d-flex align-center mb-2">
+                    <MudAvatar Variant="Variant.Outlined" Square="true" Size="Size.Medium" Class="mr-4 bg-white">
+                        <MudImage Src="@($"/Images/products/{parent.ImageFileName ?? "placeholder.png"}")" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.body1"><b>@parent.ParentName</b></MudText>
+                    <MudSpacer />
+                    <MudChip T="string" Size="Size.Small">Total: @parent.Variants.Sum(v => v.ActualQty)</MudChip>
+                </div>
+                <MudDivider Class="my-2"/>
+                @foreach(var v in parent.Variants)
+                {
+                    <div class="d-flex justify-space-between">
+                        <MudText Typo="Typo.caption">@v.VariantName</MudText>
+                        <MudText Typo="Typo.caption"><b>@v.ActualQty</b></MudText>
+                    </div>
+                }
+            </MudPaper>
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" 
+                   Size="Size.Large" Class="mt-8 py-3" OnClick="SaveRecount">
+            CONFIRM ADJUSTMENT
+        </MudButton>
     }
 </MudContainer>
 
 @code {
-    [Parameter] public int? UrlLocationId { get; set; }
     private int SelectedLocationId;
+    private string SearchTerm = "";
+    private bool ShowSummary = false;
+
     private List<Location> Locations = new();
-    private List<AdjustmentItem> AdjustmentList = new();
-    private bool isProcessing = false;
+    private List<RecountParentDTO> MasterProducts = new();
+
+    private string CurrentLocationName => Locations.FirstOrDefault(l => l.Id == SelectedLocationId)?.Name ?? "";
+
+    private IEnumerable<RecountParentDTO> FilteredProducts => 
+        string.IsNullOrEmpty(SearchTerm) ? MasterProducts : MasterProducts.Where(p => p.ParentName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
-{
-    using var context = await DbFactory.CreateDbContextAsync();
-    Locations = await context.Locations.OrderBy(l => l.Name).ToListAsync();
-
-    if (UrlLocationId.HasValue && UrlLocationId > 0)
     {
-        SelectedLocationId = UrlLocationId.Value;
-    }
-    else if (Create.SelectedLocationId > 0) // Changed from Sell to Create
-    {
-        SelectedLocationId = Create.SelectedLocationId;
+        using var db = await DbFactory.CreateDbContextAsync();
+        Locations = await db.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
     }
 
-    if (SelectedLocationId > 0)
+    private async Task OnLocationChanged(int id)
     {
-        await LoadLocationStock();
+        SelectedLocationId = id;
+        await LoadProducts();
     }
-}
 
-    private async Task LoadLocationStock()
+    private void ResetLocation() { SelectedLocationId = 0; ShowSummary = false; }
+
+    private async Task LoadProducts()
     {
-        if (SelectedLocationId == 0)
-        {
-            AdjustmentList.Clear();
-            return;
-        }
-
-        isProcessing = true;
-        using var context = await DbFactory.CreateDbContextAsync();
-
-        // 1. Get ONLY the stock records that exist for this location
-        // 2. Include the Product data so we have the Names/Sizes
-        var currentStock = await context.ProductLocations
-            .Include(pl => pl.Product) 
+        using var db = await DbFactory.CreateDbContextAsync();
+        var stock = await db.ProductLocations
+            .Include(pl => pl.Product).ThenInclude(p => p.Image)
+            .Include(pl => pl.Product).ThenInclude(p => p.ParentProduct!).ThenInclude(pp => pp.Image)
             .Where(pl => pl.LocationId == SelectedLocationId)
             .ToListAsync();
 
-        // 3. Map ONLY those existing records to the adjustment list
-        AdjustmentList = currentStock.Select(pl => new AdjustmentItem
-        {
-            ProductId = pl.ProductId,
-            ProductName = pl.Product.Name,
-            VariantDetails = $"{pl.Product.Size} / {pl.Product.Color}",
-            SystemQuantity = pl.Quantity,
-            NewQuantity = pl.Quantity
-        }).OrderBy(x => x.ProductName).ToList();
-        
-        isProcessing = false;
+        MasterProducts = stock
+            .GroupBy(s => s.Product.ParentProductId ?? s.Product.Id) 
+            .Select(group => {
+                var firstItem = group.First().Product;
+                var isChild = firstItem.ParentProductId != null;
+                return new RecountParentDTO {
+                    ParentName = isChild ? (firstItem.ParentProduct?.Name ?? firstItem.Name) : firstItem.Name,
+                    ImageFileName = isChild ? (firstItem.ParentProduct?.Image?.FileName ?? firstItem.Image?.FileName) : firstItem.Image?.FileName,
+                    Variants = group.Select(v => new RecountVariantDTO {
+                        ProductId = v.ProductId,
+                        VariantName = GenerateVariantName(v.Product),
+                        SystemQty = v.Quantity,
+                        ActualQty = v.Quantity // Default to system amount
+                    }).OrderBy(v => v.VariantName).ToList()
+                };
+            }).OrderBy(p => p.ParentName).ToList();
     }
 
-    private async Task SaveAdjustments()
+    private static string GenerateVariantName(Product p)
     {
-        using var context = await DbFactory.CreateDbContextAsync();
+        var parts = new List<string>();
+        if (p.Size.HasValue && p.Size != ProductSize.NA) parts.Add(p.Size.ToString()!);
+        if (p.Color.HasValue && p.Color != ProductColor.NA) parts.Add(p.Color.ToString()!);
+        return parts.Any() ? string.Join(" / ", parts) : "Standard";
+    }
 
-        foreach (var item in AdjustmentList)
+    private async Task SaveRecount()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        foreach (var parent in MasterProducts)
         {
-            var stockRecord = await context.ProductLocations
-                .FirstOrDefaultAsync(pl => pl.LocationId == SelectedLocationId && pl.ProductId == item.ProductId);
-
-            if (item.NewQuantity == 0 && stockRecord != null)
+            foreach (var v in parent.Variants)
             {
-                context.ProductLocations.Remove(stockRecord);
-            }
-            else if (item.NewQuantity != item.SystemQuantity)
-            {
-                if (stockRecord != null)
+                var stock = await db.ProductLocations.FirstOrDefaultAsync(pl => pl.ProductId == v.ProductId && pl.LocationId == SelectedLocationId);
+                if (stock != null && stock.Quantity != v.ActualQty)
                 {
-                    stockRecord.Quantity = item.NewQuantity;
-                    stockRecord.LastUpdated = DateTime.UtcNow;
-                }
-                else if (item.NewQuantity > 0)
-                {
-                    context.ProductLocations.Add(new ProductLocation
-                    {
-                        LocationId = SelectedLocationId,
-                        ProductId = item.ProductId,
-                        Quantity = item.NewQuantity,
-                        LastUpdated = DateTime.UtcNow
-                    });
+                    stock.Quantity = v.ActualQty;
+                    stock.LastUpdated = DateTime.UtcNow;
                 }
             }
         }
-
-        await context.SaveChangesAsync();
-        Navigation.NavigateTo("/inventory/recount", forceLoad: true);
+        await db.SaveChangesAsync();
+        Navigation.NavigateTo("/inventory/stock");
     }
 
-    public class AdjustmentItem
-    {
+    public class RecountParentDTO {
+        public string ParentName { get; set; } = "";
+        public string? ImageFileName { get; set; }
+        public List<RecountVariantDTO> Variants { get; set; } = new();
+    }
+
+    public class RecountVariantDTO {
         public int ProductId { get; set; }
-        public string ProductName { get; set; } = "";
-        public string VariantDetails { get; set; } = "";
-        public int SystemQuantity { get; set; }
-        public int NewQuantity { get; set; }
+        public string VariantName { get; set; } = "";
+        public int SystemQty { get; set; }
+        public int ActualQty { get; set; }
     }
 }

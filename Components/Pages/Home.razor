@@ -4,21 +4,51 @@
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-16 text-center">
     <AuthorizeView>
-        @* ── Content for logged-in users ── *@
         <Authorized>
-            @* FIX: Use @context.User instead of @User *@
-            <MudText Typo="Typo.h3" GutterBottom="true">Welcome back, @context.User.Identity?.Name!</MudText>
-            <MudText Typo="Typo.body1">You are logged in.</MudText>
-            <MudButton Variant="Variant.Text" Color="Color.Primary" href="/dashboard" Class="mt-4">
+            <MudText Typo="Typo.h3" GutterBottom="true" Style="font-family: var(--title-font);">
+                Welcome back, @context.User.Identity?.Name!
+            </MudText>
+            
+            @* Quick Action Buttons Section *@
+            <MudGrid Justify="Justify.Center" Class="mt-10">
+                <MudItem xs="3">
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.BarChart" Size="Size.Large" href="/" />
+                        <MudText Typo="Typo.subtitle1"><b>Analytics</b></MudText>
+                    </MudStack>
+                </MudItem>
+                
+                <MudItem xs="3">
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.Inventory2" Size="Size.Large" href="/inventory/transfer/create" />
+                        <MudText Typo="Typo.subtitle1"><b>Pack a Box</b></MudText>
+                    </MudStack>
+                </MudItem>
+
+                <MudItem xs="3">
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.MenuBook" Size="Size.Large" href="/inventory/stock" />
+                        <MudText Typo="Typo.subtitle1"><b>Inventory</b></MudText>
+                    </MudStack>
+                </MudItem>
+
+                <MudItem xs="3">
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.LibraryBooks" Size="Size.Large" href="/catalog" />
+                        <MudText Typo="Typo.subtitle1"><b>Catalog</b></MudText>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+
+            <MudButton Variant="Variant.Text" Color="Color.Primary" href="/dashboard" Class="mt-8">
                 Go to Dashboard →
             </MudButton>
         </Authorized>
 
-        @* ── Content for anonymous visitors ── *@
         <NotAuthorized>
-            <MudText Typo="Typo.h2" GutterBottom="true">Puppet Festival Merchandise</MudText>
+            <MudText Typo="Typo.h2" GutterBottom="true" Style="font-family: var(--title-font);">Puppet Festival Merchandise</MudText>
             <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mb-8">
-                Welcome to the Chicago Puppet Festival merchandise management system.
+                Welcome to the Chicago Puppet Festival inventory management system.
             </MudText>
             
             <MudStack Row="true" Justify="Justify.Center" Spacing="4">
