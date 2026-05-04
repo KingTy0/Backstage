@@ -1,41 +1,64 @@
-﻿@* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   File: Components/Pages/Home.razor
-
-   PURPOSE: The root landing page at "/". Shows different content
-   depending on whether the user is logged in or not.
-
-   KEY CONCEPTS:
-   • <AuthorizeView>  →  Built-in Blazor component that renders
-     different child content based on authentication state.
-   • <Authorized>  →  Shown only when user IS logged in.
-   • <NotAuthorized>  →  Shown only when user is NOT logged in.
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *@
-
-@page "/"
+﻿@page "/"
 
 <PageTitle>Puppet Fest Merch</PageTitle>
 
-<AuthorizeView>
-    @* ── Content for logged-in users ── *@
-    <Authorized>
-        <h1>Welcome back, @context.User.Identity?.Name!</h1>
-        <p>You are logged in.
-            <a href="/dashboard">Go to Dashboard →</a>
-        </p>
-    </Authorized>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-16 text-center">
+    <AuthorizeView>
+        <Authorized>
+            <MudText Typo="Typo.h3" GutterBottom="true" Style="font-family: var(--title-font);">
+                Welcome back, @context.User.Identity?.Name!
+            </MudText>
+            
+            @* Quick Action Buttons Section *@
+            <MudGrid Justify="Justify.Center" Class="mt-10">
+                <MudItem xs="3">
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.BarChart" Size="Size.Large" href="/" />
+                        <MudText Typo="Typo.subtitle1"><b>Analytics</b></MudText>
+                    </MudStack>
+                </MudItem>
+                
+                <MudItem xs="3">
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.Inventory2" Size="Size.Large" href="/inventory/transfer/create" />
+                        <MudText Typo="Typo.subtitle1"><b>Pack a Box</b></MudText>
+                    </MudStack>
+                </MudItem>
 
-    @* ── Content for anonymous visitors ── *@
-    <NotAuthorized>
-        <h1>Puppet Festival Merchandise</h1>
-        <p class="lead">
-            Welcome to the Chicago Puppet Festival merchandise
-            management system.
-        </p>
-        <p>
-            @* These links point to the Identity pages that were
-               auto-generated in Components/Account/Pages/ *@
-            <a href="Account/Login"  class="btn btn-primary btn-lg me-2">Login</a>
-            <a href="Account/Register" class="btn btn-outline-secondary btn-lg">Register</a>
-        </p>
-    </NotAuthorized>
-</AuthorizeView>
+                <MudItem xs="3">
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.MenuBook" Size="Size.Large" href="/inventory/stock" />
+                        <MudText Typo="Typo.subtitle1"><b>Inventory</b></MudText>
+                    </MudStack>
+                </MudItem>
+
+                <MudItem xs="3">
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.LibraryBooks" Size="Size.Large" href="/catalog" />
+                        <MudText Typo="Typo.subtitle1"><b>Catalog</b></MudText>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+
+            <MudButton Variant="Variant.Text" Color="Color.Primary" href="/dashboard" Class="mt-8">
+                Go to Dashboard →
+            </MudButton>
+        </Authorized>
+
+        <NotAuthorized>
+            <MudText Typo="Typo.h2" GutterBottom="true" Style="font-family: var(--title-font);">Puppet Festival Merchandise</MudText>
+            <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mb-8">
+                Welcome to the Chicago Puppet Festival inventory management system.
+            </MudText>
+            
+            <MudStack Row="true" Justify="Justify.Center" Spacing="4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" href="Account/Login">
+                    Login
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Large" href="Account/Register">
+                    Register
+                </MudButton>
+            </MudStack>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudContainer>

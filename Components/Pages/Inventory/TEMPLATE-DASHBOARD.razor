@@ -6,82 +6,96 @@
 
 <PageTitle>Inventory Dashboard</PageTitle>
 
-<div class="container-fluid">
-    <h1>Inventory Dashboard</h1>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-6">Inventory Dashboard</MudText>
     
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <a href="/inventory/stock" class="card text-center p-3 bg-primary text-white">
-                <h3>Stock Levels</h3>
-                <p class="mb-0 fs-1">@TotalStock</p>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/inventory/transfers" class="card text-center p-3 bg-success text-white">
-                <h3>Recent Transfers</h3>
-                <p class="mb-0">@RecentTransfers</p>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/inventory/transfer/create" class="card text-center p-3 bg-warning text-dark">
-                <h3>New Transfer</h3>
-                <p class="mb-0">Create Box</p>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/locations" class="card text-center p-3 bg-info text-white">
-                <h3>Locations</h3>
-                <p class="mb-0">@ActiveLocations</p>
-            </a>
-        </div>
-    </div>
+    <MudGrid Spacing="3" Class="mb-8">
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4 text-center mud-theme-primary">
+                <MudLink href="/inventory/stock" Color="Color.Inherit" Underline="Underline.None">
+                    <MudText Typo="Typo.h6">Stock Levels</MudText>
+                    <MudText Typo="Typo.h3">@TotalStock</MudText>
+                </MudLink>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4 text-center mud-theme-success">
+                <MudLink href="/inventory/transfers" Color="Color.Inherit" Underline="Underline.None">
+                    <MudText Typo="Typo.h6">Transfers</MudText>
+                    <MudText Typo="Typo.h3">@RecentTransfersCount</MudText>
+                </MudLink>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4 text-center mud-theme-warning">
+                <MudLink href="/inventory/transfer/create" Color="Color.Inherit" Underline="Underline.None">
+                    <MudText Typo="Typo.h6">New Transfer</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">Create Box</MudText>
+                </MudLink>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4 text-center mud-theme-info">
+                <MudLink href="/locations" Color="Color.Inherit" Underline="Underline.None">
+                    <MudText Typo="Typo.h6">Locations</MudText>
+                    <MudText Typo="Typo.h3">@ActiveLocations</MudText>
+                </MudLink>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 
-    <div class="row">
-        <div class="col-md-6">
-            <h3>Recent Transfers</h3>
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudText Typo="Typo.h5" Class="mb-4">Recent Transfers</MudText>
             @if (RecentBoxes.Any())
             {
-                <div class="list-group">
+                <MudList T="string">
                     @foreach (var box in RecentBoxes.Take(5))
                     {
-                        <a href="/inventory/transfer/details/@box.Id" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6>@box.FromLocation.Name → @box.ToLocation.Name</h6>
-                                <small>@box.CreatedAt.ToString("MMM dd")</small>
+                        <MudListItem Icon="@Icons.Material.Filled.LocalShipping" href="@($"/inventory/transfer/details/{box.Id}")">
+                            <div class="d-flex justify-space-between w-100">
+                                <MudText>@box.FromLocation.Name → @box.ToLocation.Name</MudText>
+                                <MudText Typo="Typo.caption">@box.CreatedAt.ToString("MMM dd")</MudText>
                             </div>
-                            <p class="mb-1">@box.Items.Count items</p>
-                            <small>@box.Notes</small>
-                        </a>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@box.Items.Count items</MudText>
+                        </MudListItem>
                     }
-                </div>
-            }
-        </div>
-        <div class="col-md-6">
-            <h3>Low Stock Alerts</h3>
-            @if (LowStock.Any())
-            {
-                <ul class="list-group">
-                    @foreach (var item in LowStock.Take(5))
-                    {
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            @item.Product.Name
-                            <span class="badge bg-warning rounded-pill">@item.Quantity total</span>
-                        </li>
-                    }
-                </ul>
+                </MudList>
             }
             else
             {
-                <div class="alert alert-success">All products have sufficient stock</div>
+                <MudAlert Severity="Severity.Info">No recent transfers.</MudAlert>
             }
-        </div>
-    </div>
-</div>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudText Typo="Typo.h5" Class="mb-4">Low Stock Alerts</MudText>
+            @if (LowStock.Any())
+            {
+                <MudList T="string">
+                    @foreach (var item in LowStock.Take(5))
+                    {
+                        <MudListItem Icon="@Icons.Material.Filled.Warning" IconColor="Color.Warning">
+                            <div class="d-flex justify-space-between w-100">
+                                <MudText>@item.Product.Name</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning">@item.Quantity left</MudChip>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Success">All products have sufficient stock.</MudAlert>
+            }
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
 @code {
     private int TotalStock;
     private int ActiveLocations;
-    private int RecentTransfers;
+    private int RecentTransfersCount;
     private List<StockTransferBox> RecentBoxes = new();
     private List<ProductLocation> LowStock = new();
 
@@ -91,14 +105,13 @@
         
         TotalStock = await context.ProductLocations.SumAsync(pl => (int?)pl.Quantity) ?? 0;
         ActiveLocations = await context.Locations.CountAsync(l => l.IsActive);
-        RecentTransfers = await context.StockTransferBoxes.CountAsync();
+        RecentTransfersCount = await context.StockTransferBoxes.CountAsync();
         
         RecentBoxes = await context.StockTransferBoxes
             .Include(b => b.FromLocation)
             .Include(b => b.ToLocation)
             .Include(b => b.Items)
             .OrderByDescending(b => b.CreatedAt)
-            .Take(10)
             .ToListAsync();
 
         LowStock = await context.ProductLocations

@@ -1,59 +1,120 @@
-@* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   File: Components/Pages/Dashboard.razor
-
-   PURPOSE: Post-login landing page. Shows the current user's
-   name and which roles they belong to. This page requires
-   authentication — unauthenticated users are redirected to login.
-
-   KEY CONCEPTS:
-   • @page "/dashboard"  →  Maps this component to the URL /dashboard
-   • @attribute [Authorize]  →  Requires login; redirects if not authenticated
-   • [CascadingParameter] HttpContext  →  Gives access to the current user
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *@
-
 @page "/dashboard"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
 @using PuppetFestAPP.Web.Data
 @attribute [Authorize]
+@rendermode InteractiveServer
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject AuthenticationStateProvider AuthStateProvider
 
-@* ── Page title appears in the browser tab ── *@
 <PageTitle>Dashboard - Puppet Fest Merch</PageTitle>
 
-@* ── Greeting: shows the logged-in user's email/username ── *@
-<h1>Hello, @context.User.Identity?.Name!</h1>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+    <MudText Typo="Typo.h4">Hello, @UserName!</MudText>
+    <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">Welcome to the Puppet Festival Merchandise Management System.</MudText>
 
-<p>Welcome to the Puppet Festival Merchandise Management System.</p>
+    <MudGrid GutterSize="3">
+        @* ── Revenue Card ── *@
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="1" Class="pa-4 text-center">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Today's Revenue</MudText>
+                <MudText Typo="Typo.h4" Class="mt-2">@TotalRevenue.ToString("C")</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Success">
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" /> From recorded sales
+                </MudText>
+            </MudPaper>
+        </MudItem>
 
-@* ── Role display: iterates all defined roles and shows which
-     ones the current user belongs to ── *@
-<div class="card mt-4">
-    <div class="card-body">
-        <h5 class="card-title">Your Roles</h5>
-        <ul>
+        @* ── Shrinkage Card ── *@
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="1" Class="pa-4 text-center">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Inventory Shrinkage</MudText>
+                <MudText Typo="Typo.h4" Color="Color.Error" Class="mt-2">@ShrinkageCount</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Extra items sold via manual count</MudText>
+            </MudPaper>
+        </MudItem>
 
-            @foreach (var role in AppRoles.AllRoles)
-            {
-                @if (context.User.IsInRole(role))
-                {
-                    <li><strong>@role</strong></li>
-                }
-            }
+        @* ── Roles Card ── *@
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="1" Class="pa-4 text-center">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Active Roles</MudText>
+                <MudStack Direction="Row" Wrap="Wrap.Wrap" Justify="Justify.Center" Class="mt-2">
+                    @foreach (var role in UserRoles)
+                    {
+                        <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">@role</MudChip>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 
-        </ul>
-    </div>
-</div>
+    @* ── Sales Visualizer ── *@
+    <MudPaper Elevation="1" Class="pa-4 mt-6">
+        <MudText Typo="Typo.h6">Manual vs. System Sales (Today)</MudText>
+
+        @if (TotalUnitsSold > 0)
+        {
+            var systemPct = (double)SystemSoldUnits / TotalUnitsSold * 100;
+            var manualPct = (double)Math.Abs(ShrinkageCount) / TotalUnitsSold * 100;
+
+            <MudText Typo="Typo.subtitle2" Class="mt-4">System Sales: @SystemSoldUnits</MudText>
+            <MudProgressLinear Value="@systemPct" Color="Color.Primary" Height="10" Class="mt-1" />
+
+            <MudText Typo="Typo.subtitle2" Class="mt-4">Manual Adjustments: @Math.Abs(ShrinkageCount)</MudText>
+            <MudProgressLinear Value="@manualPct" Color="Color.Warning" Height="10" Class="mt-1" />
+
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4 d-block">
+                Blue represents system-recorded sales. Yellow represents reconciliation discrepancies.
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">No sales activity recorded today yet.</MudText>
+        }
+    </MudPaper>
+</MudContainer>
 
 @code {
-    // ── HttpContext cascading parameter ──
-    // In Blazor, a "cascading parameter" is a value passed down from a
-    // parent component (in this case, the App/Router). HttpContext contains
-    // the current HTTP request, including the authenticated user's identity.
-    //
-    // ⚠️ IMPORTANT: HttpContext is ONLY available in static server-side
-    // rendering (SSR) mode — the default when no @rendermode directive is set.
-    // If you later add @rendermode InteractiveServer to this page (e.g., to
-    // make buttons interactive), HttpContext will be NULL and this page will
-    // crash. For interactive pages, use AuthenticationStateProvider instead.
-    [CascadingParameter]
-    private HttpContext context { get; set; } = default!;
+    private string UserName = "User";
+    private List<string> UserRoles = new();
+    private decimal TotalRevenue;
+    private int SystemSoldUnits;
+    private int ShrinkageCount;
+    private int TotalUnitsSold => SystemSoldUnits + Math.Abs(ShrinkageCount);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            UserName = user.Identity.Name ?? "User";
+            foreach (var role in AppRoles.AllRoles)
+            {
+                if (user.IsInRole(role))
+                    UserRoles.Add(role);
+            }
+        }
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        var today = DateTime.UtcNow.Date;
+
+        var salesToday = await db.Sales
+            .Where(s => s.SaleDate >= today)
+            .ToListAsync();
+
+        TotalRevenue = salesToday
+            .Where(s => !s.IsManualAdjustment)
+            .Sum(s => s.QuantitySold * s.UnitPriceAtSale);
+
+        SystemSoldUnits = salesToday
+            .Where(s => !s.IsManualAdjustment)
+            .Sum(s => s.QuantitySold);
+
+        ShrinkageCount = salesToday
+            .Where(s => s.IsManualAdjustment)
+            .Sum(s => s.QuantitySold);
+    }
 }

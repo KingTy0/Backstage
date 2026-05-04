@@ -1,83 +1,112 @@
 @page "/products"
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.QuickGrid
 @using PuppetFestAPP.Web.Data
-@using Image = PuppetFestAPP.Web.Models.Image
 @using PuppetFestAPP.Web.Models
 @rendermode InteractiveServer
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 
-<PageTitle>Product Management</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+    @* --- HEADER SECTION --- *@
+    <MudText Typo="Typo.h3" Style="font-family: var(--title-font); font-weight: bold;">Product Catalog</MudText>
+    <MudText Typo="Typo.body1" Class="mt-2 mb-6" Color="Color.Secondary">
+        The collection of merchandise currently being sold.
+    </MudText>
 
-<h1>Product Management</h1>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" 
+               Size="Size.Large" Class="py-3 mb-8" StartIcon="@Icons.Material.Filled.Add"
+               Href="products/create">
+        CREATE A PRODUCT
+    </MudButton>
 
-<p>
-    <a href="products/create" class="btn btn-primary">Create New Master Product</a>
-</p>
+    @* --- SEARCH & FILTER SECTION --- *@
+    <div class="d-flex gap-2 mb-4">
+        <MudTextField @bind-Value="searchTerm" Placeholder="Search for an item" 
+                      Variant="Variant.Filled" Adornment="Adornment.End" 
+                      AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense" 
+                      Immediate="true" />
+        
+        <MudSelect T="string" Label="Filter" Variant="Variant.Outlined" Margin="Margin.Dense" 
+                   Style="width: 120px;" AnchorOrigin="Origin.BottomCenter">
+            <MudSelectItem Value="@("All")" />
+            <MudSelectItem Value="@("Apparel")" />
+            <MudSelectItem Value="@("Misc")" />
+        </MudSelect>
+    </div>
 
-@* Search Bar *@
-<div class="mb-3 mt-3">
-    <input type="search" class="form-control" placeholder="Search by product name..." 
-           @bind="searchTerm" @bind:event="oninput" />
-</div>
-
-<QuickGrid Items="FilteredProducts" Pagination="pagination">
-    @* Image Column *@
-   <TemplateColumn Title="Image" Context="prod">
-    @* We use 'prod' (lowercase) because the grid defined it as the 'Context' *@
-    @if (prod.Image != null && !string.IsNullOrEmpty(prod.Image.FileName))
-    {
-        <img src="/Images/products/@prod.Image.FileName" 
-     style="width: 50px; height: 50px; object-fit: cover;" 
-     class="rounded shadow-sm" />
-    }
-    else
-    {
-        <span>No Image</span>
-    }
-</TemplateColumn>
-
-    <PropertyColumn Property="@(p => p.Name)" Sortable="true" Title="Product Name" />
-    
-    <TemplateColumn Title="Category" Sortable="true" Context="prod">
-        @prod.Category?.Name
-    </TemplateColumn>
-
-    <PropertyColumn Property="@(p => p.Price)" Format="C" Sortable="true" />
-    
-    <TemplateColumn Context="prod" Title="Actions">
-        <div class="btn-group">
-            <a href="@($"/products/edit/{prod.Id}")" class="btn btn-sm btn-outline-primary">Edit</a>
-            <a href="@($"/products/details/{prod.Id}")" class="btn btn-sm btn-info text-white">Manage Inventory</a>
-            <a href="@($"/products/delete/{prod.Id}")" class="btn btn-sm btn-danger">Delete</a>
+    @* --- PRODUCT LIST SECTION (Matches image_a22dc3.png) --- *@
+    <MudPaper Elevation="0" Outlined="true" Class="overflow-hidden">
+        @* List Header *@
+        <div class="d-flex pa-3 grey lighten-4 border-bottom">
+            <MudText Typo="Typo.caption" Class="flex-grow-1"><b>Product Name</b></MudText>
+            <MudText Typo="Typo.caption" Style="width: 80px;" Align="Align.Right"><b>Category</b></MudText>
         </div>
-    </TemplateColumn>
-</QuickGrid>
 
-<Paginator State="pagination" />
+        @foreach (var prod in FilteredProducts)
+        {
+            <div class="product-row d-flex align-center pa-3 border-bottom clickable" @onclick="@(() => NavigateToDetails(prod.Id))">
+                @* Product Thumbnail *@
+                <MudAvatar Variant="Variant.Outlined" Square="true" Size="Size.Large" Class="mr-3 bg-white">
+                    @if (prod.Image != null)
+                    {
+                        <MudImage Src="@($"/images/products/{prod.Image.FileName}")" />
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.ImageNotSupported" Color="Color.Transparent" />
+                    }
+                </MudAvatar>
+
+                @* Name & Price *@
+                <div class="flex-grow-1">
+                    <MudText Typo="Typo.body2" Style="font-weight: 500; line-height: 1.2;">@prod.Name</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@prod.Price.ToString("C")</MudText>
+                </div>
+
+                @* Category Label *@
+                <div style="width: 80px;" class="text-right">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@prod.Category?.Name</MudText>
+                </div>
+            </div>
+        }
+    </MudPaper>
+</MudContainer>
+
+<style>
+    /* Zebra Striping similar to mockup image_a22dc3.png */
+    .product-row:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    .product-row:hover {
+        background-color: #f0f0f0;
+        cursor: pointer;
+    }
+    .border-bottom {
+        border-bottom: 1px solid #e0e0e0;
+    }
+</style>
 
 @code {
-    private IQueryable<Product>? products;
+    private List<Product> Products = new();
     private string searchTerm = "";
 
-    private IQueryable<Product> FilteredProducts =>
-        string.IsNullOrWhiteSpace(searchTerm)
-            ? products ?? Enumerable.Empty<Product>().AsQueryable()
-            : (products ?? Enumerable.Empty<Product>().AsQueryable())
-                .Where(p => p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<Product> FilteredProducts => 
+        string.IsNullOrWhiteSpace(searchTerm) 
+            ? Products 
+            : Products.Where(p => p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
+    @inject NavigationManager Nav
+    private void NavigateToDetails(int id) => Nav.NavigateTo($"/products/details/{id}");
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = await DbFactory.CreateDbContextAsync();
+        using var db = await DbFactory.CreateDbContextAsync();
 
-        var data = await context.Products
+        // Loading Master Products only (ParentProductId == null)
+        Products = await db.Products
             .Include(p => p.Category)
-            .Include(p => p.Image) 
+            .Include(p => p.Image)
             .Where(p => p.ParentProductId == null)
+            .OrderBy(p => p.Name)
             .ToListAsync();
-
-        products = data.AsQueryable();
     }
 }
