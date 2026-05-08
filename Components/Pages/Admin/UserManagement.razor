@@ -5,13 +5,21 @@
 @attribute [Authorize(Roles = "Admin")]
 @rendermode InteractiveServer
 @inject IServiceProvider ServiceProvider
+@inject NavigationManager NavigationManager
 
 <PageTitle>User Management</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium">
-    <MudText Class="my-5">
+    <MudText Class="my-8">
         <h1>User Management</h1>
     </MudText>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <MudAlert Severity="@statusSeverity" Variant="Variant.Text" Class="mb-4" OnClose="@(() => statusMessage = "")">
+            @statusMessage
+        </MudAlert>
+    }
 
     <MudButton Href="/admin/users/create" 
                 StartIcon="@Icons.Material.Filled.Add"
@@ -19,88 +27,172 @@
                 Color="Color.Primary"
                 FullWidth="true"
                 Size="Size.Large"
-                Class="my-5">
+                Class="mb-8">
         Create a User
     </MudButton>
 
-    @if (!string.IsNullOrEmpty(statusMessage))
-    {
-        <MudAlert Severity="@statusSeverity" Variant="Variant.Outlined" Class="mb-4" OnClose="@(() => statusMessage = "")">
-            @statusMessage
-        </MudAlert>
-    }
+    <MudText Class="mb-2">
+        <h3>All Users (@users.Count)</h3>
+    </MudText>
+    <MudDivider Class="mb-5"></MudDivider>
 
-    <MudText Typo="Typo.h6">All Users (@users.Count)</MudText>
-
-    @* Admin Role -- Expansion Panel *@
+    
     <MudExpansionPanels MultiExpansion="true" Class="mb-4">
-        <MudExpansionPanel Text="@($"Admin ({Admins.Count()})")" IsExpanded="true">
-            <MudList T="string">
+        @* Admin Role -- Expansion Panel *@
+        <MudExpansionPanel Text="@($"Admin ({Admins.Count()})")" Expanded="true" Class="px-1">
+            <MudList T="string" >
                 @foreach (var admin in Admins)
                 {
-                    <MudListItem>
-                        <div class="d-flex align-center justify-space-between w-100">
-                                <MudText Typo="Typo.body1">@admin.Email</MudText>
-                                <div>
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Default" Class="mr-2" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Default" Class="mr-2" />
-                                </div>
+                    <MudListItem Class="px-1">
+                        <div class="d-flex align-center justify-space-between">
+                            <MudText Typo="Typo.body1"><p>@admin.Email</p></MudText>
+                            <div>
+                                <MudIconButton OnClick="@(() => NavigationManager.NavigateTo($"/admin/users/{admin.Id}/edit"))"
+                                    Icon="@Icons.Material.Filled.Edit"
+                                    Variant="Variant.Filled" 
+                                    Color="Color.Default" 
+                                    Class="mr-2"
+                                />
+                                <MudIconButton OnClick="@(() => ConfirmDelete(admin))"
+                                    Disabled="@(admin.Email == "admin@puppetfest.local")"
+                                    Icon="@Icons.Material.Filled.Delete" 
+                                    Variant="Variant.Filled" 
+                                    Color="Color.Default" 
+                                    Class="mr-2" />
+                            </div>
                         </div>
                     </MudListItem>
                     <MudDivider />
                 }
             </MudList>
         </MudExpansionPanel>
-        <MudExpansionPanel Text="@($"Inventory Managers ({InventoryManagers.Count()})")" IsExpanded="true">
+
+        @* Inventory Manager Role -- Expansion Panel *@
+        <MudExpansionPanel Text="@($"Inventory Manager ({InventoryManagers.Count()})")" Expanded="true">
             <MudList T="string">
                 @foreach (var im in InventoryManagers)
                 {
-                    <MudListItem>
-                        <div class="d-flex align-center justify-space-between w-100">
-                                <MudText Typo="Typo.body1">@im.Email</MudText>
-                                <div>
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Default" Class="mr-2" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Default" Class="mr-2" />
-                                </div>
+                    <MudListItem Class="px-1">
+                        <div class="d-flex align-center justify-space-between">
+                            <MudText Typo="Typo.body1"><p>@im.Email</p></MudText>
+                            <div>
+                                <MudIconButton OnClick="@(() => NavigationManager.NavigateTo($"/admin/users/{im.Id}/edit"))"
+                                    Icon="@Icons.Material.Filled.Edit"
+                                    Variant="Variant.Filled" 
+                                    Color="Color.Default" 
+                                    Class="mr-2"
+                                />
+                                <MudIconButton OnClick="@(() => ConfirmDelete(im))"
+                                    Disabled="@(im.Email == "admin@puppetfest.local")"
+                                    Icon="@Icons.Material.Filled.Delete" 
+                                    Variant="Variant.Filled" 
+                                    Color="Color.Default" 
+                                    Class="mr-2" />
+                            </div>
                         </div>
                     </MudListItem>
                     <MudDivider />
                 }
             </MudList>
         </MudExpansionPanel>
-        <MudExpansionPanel Text="@($"Sales Staff ({SalesStaffs.Count()})")" IsExpanded="true">
+
+        @* Sales Staff Role -- Expansion Panel *@
+        <MudExpansionPanel Text="@($"Sales Staff ({SalesStaffs.Count()})")" Expanded="true">
             <MudList T="string">
                 @foreach (var ss in SalesStaffs)
                 {
-                    <MudListItem>
-                        <div class="d-flex align-center justify-space-between w-100">
-                                <MudText Typo="Typo.body1">@ss.Email</MudText>
-                                <div>
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Default" Class="mr-2" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Default" Class="mr-2" />
-                                </div>
+                    <MudListItem Class="px-1">
+                        <div class="d-flex align-center justify-space-between">
+                            <MudText Typo="Typo.body1"><p>@ss.Email</p></MudText>
+                            <div>
+                                <MudIconButton OnClick="@(() => NavigationManager.NavigateTo($"/admin/users/{ss.Id}/edit"))"
+                                    Icon="@Icons.Material.Filled.Edit"
+                                    Variant="Variant.Filled" 
+                                    Color="Color.Default" 
+                                    Class="mr-2"
+                                />
+                                <MudIconButton OnClick="@(() => ConfirmDelete(ss))"
+                                    Disabled="@(ss.Email == "admin@puppetfest.local")"
+                                    Icon="@Icons.Material.Filled.Delete" 
+                                    Variant="Variant.Filled" 
+                                    Color="Color.Default" 
+                                    Class="mr-2" />
+                            </div>
                         </div>
                     </MudListItem>
                     <MudDivider />
                 }
             </MudList>
         </MudExpansionPanel>
+
+        @* Driver Role -- Expansion Panel *@
     </MudExpansionPanels>
 
-     @* Inventory Manager Role -- Expansion Panel *@
-     @* Sales Staff Role -- Expansion Panel *@
-     @* Driver Role -- Expansion Panel *@
 
+    @* Confirmation Popup *@
+    @if (showDeleteConfirm && userPendingDelete is not null)
+    {
+        @* Darkened overlay *@
+        <div @onclick="CancelDelete" style="
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;">
+        </div>
 
-    @* ── User List Table ── *@
-    <MudTable Items="@users" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="1">
+        @* Popup *@
+        <div Class="popup">
+            <MudCard Elevation="6">
+                <MudCardHeader>
+                    <CardHeaderAvatar>
+                        <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" Size="Size.Large" />
+                    </CardHeaderAvatar>
+                    <CardHeaderContent>
+                        <MudText>
+                            <h3>Delete User</h3>
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+
+                <MudCardContent Class="px-4 pt-0 pb-2">
+                    <MudText>
+                        <p Class="body-1">Are you sure you want to delete <strong>@userPendingDelete.Email</strong>?</p>
+                    </MudText>
+                    <MudText>
+                        <p Class="body-2">This action cannot be undone.</p>
+                    </MudText>
+                </MudCardContent>
+
+                <MudCardActions Class="d-flex justify-space-between px-4 py-4">
+                    <MudButton OnClick="ExecuteDelete"
+                            StartIcon="@Icons.Material.Filled.Delete"
+                            Variant="Variant.Filled"
+                            Color="Color.Primary"
+                            FullWidth
+                            Class="mr-4"
+                            >
+                        Delete
+                    </MudButton>
+                    <MudButton OnClick="CancelDelete"
+                            Variant="Variant.Filled"
+                            Color="Color.Default"
+                            FullWidth
+                            >
+                        Cancel
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </div>
+    }
+
+    @* <MudTable Items="@users" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="1">
         <ToolBarContent>
             <MudText Typo="Typo.h6">All Users (@users.Count)</MudText>
         </ToolBarContent>
         <HeaderContent>
             <MudTh>Email</MudTh>
             <MudTh>Roles</MudTh>
-            @* <MudTh>Status</MudTh> *@
+            <MudTh>Status</MudTh> =
             <MudTh>Actions</MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -112,7 +204,7 @@
                 }
             </MudTd>
 
-            @* <MudTd DataLabel="Status">
+            <MudTd DataLabel="Status">
                 @if (context.EmailConfirmed)
                 {
                     <MudText Color="Color.Success">✓ Confirmed</MudText>
@@ -121,7 +213,7 @@
                 {
                     <MudText Color="Color.Default">Pending</MudText>
                 }
-            </MudTd> *@
+            </MudTd> 
 
             <MudTd DataLabel="Actions">
                 <MudStack Row="true" Spacing="1">
@@ -138,13 +230,19 @@
                 </MudStack>
             </MudTd>
         </RowTemplate>
-    </MudTable>
+    </MudTable> *@
+    
 </MudContainer>
+
 
 @code {
     private List<UserViewModel> users = new();
     private string statusMessage = "";
     private string statusCssClass = "";
+
+    // For delete confirmation popup
+    private bool showDeleteConfirm = false;
+    private UserViewModel? userPendingDelete = null; 
 
     // Filters for roles
     private IEnumerable<UserViewModel> Admins =>
@@ -159,7 +257,7 @@
         users?.Where(u => u.Roles.Any(r => r.Equals("SalesStaff", StringComparison.OrdinalIgnoreCase)))
         ?? Enumerable.Empty<UserViewModel>();
 
-
+    // Status message switches
     private Severity statusSeverity => statusCssClass switch {
         "alert-success" => Severity.Success,
         "alert-danger" => Severity.Error,
@@ -205,6 +303,40 @@
             var result = await userManager.DeleteAsync(user);
             if (result.Succeeded) { statusMessage = "User deleted."; statusCssClass = "alert-success"; await LoadUsers(); }
         }
+    }
+
+    // Helper methods for delete confirmation
+    // Opens popup
+    private void ConfirmDelete(UserViewModel user)
+    {
+        userPendingDelete = user;
+        showDeleteConfirm = true; 
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (userPendingDelete is null) return; 
+
+        using var scope = ServiceProvider.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByIdAsync(userPendingDelete.Id);
+        if (user != null)
+        {
+            var result = await userManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                statusMessage = $"User {userPendingDelete.Email} has been deleted.";
+                statusCssClass = "alert-success";
+                await LoadUsers();
+            }
+        }
+        CancelDelete();     
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirm = false;
+        userPendingDelete = null; 
     }
 
     private class UserViewModel {
