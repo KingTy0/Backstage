@@ -105,7 +105,7 @@
         var result = await userManager.CreateAsync(user, newUserPassword);
         if (result.Succeeded) {
             await userManager.AddToRoleAsync(user, newUserRole);
-            NavigationManager.NavigateTo("/admin/users");
+            NavigationManager.NavigateTo("/admin/users?status=success");
         } else {
             statusMessage = "Error: " + string.Join(", ", result.Errors.Select(e => e.Description));
             statusCssClass = "alert-danger";

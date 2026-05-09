@@ -10,9 +10,10 @@
 <PageTitle>User Management</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium">
-    <MudText Class="my-8">
+    <MudText Class="my-5">
         <h1>User Management</h1>
     </MudText>
+    <MudDivider Class="mb-5"></MudDivider>
 
     @if (!string.IsNullOrEmpty(statusMessage))
     {
@@ -26,8 +27,7 @@
                 Variant="Variant.Filled" 
                 Color="Color.Primary"
                 FullWidth="true"
-                Size="Size.Large"
-                Class="mb-8">
+                Size="Size.Large">
         Create a User
     </MudButton>
 
@@ -277,7 +277,28 @@
         _ => Severity.Info
     };
 
-    protected override async Task OnInitializedAsync() => await LoadUsers();
+    protected override async Task OnInitializedAsync() {
+        await LoadUsers();
+        ReadStatusFromQuery();
+    }
+
+    // Handle status messages from edit/create pages on init
+    private void ReadStatusFromQuery()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        statusMessage = query["status"] switch
+        {
+            "created" => "User created successfully.",
+            "updated" => "User updated successfully.",
+            _ => ""
+        };
+
+        statusCssClass = string.IsNullOrEmpty(statusMessage) ? "" : "alert-success";
+    }
+
+    
 
     private async Task LoadUsers() {
         users.Clear();
