@@ -36,7 +36,7 @@
                                     <MudText Typo="Typo.overline" Color="Color.Secondary">
                                         @box.CreatedAt.ToString("MMM dd, yyyy")
                                     </MudText>
-                                    <MudText Typo="Typo.h6" Class="mb-2">Box #@box.Id</MudText>
+                                    <MudText Typo="Typo.h6" Class="mb-2">@(string.IsNullOrEmpty(box.Title) ? $"Box #{box.Id}" : box.Title)</MudText>
 
                                     <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1" Class="mb-1">
                                         <MudChip T="string" Size="Size.Small" Color="Color.Secondary"

@@ -52,9 +52,21 @@
             <MudTextField @bind-Value="SearchTerm" Placeholder="Search for an item" 
                           Variant="Variant.Filled" Adornment="Adornment.End" 
                           AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense" />
-            <MudSelect T="string" Label="Filter" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 120px;">
-                <MudSelectItem Value="@("All")" />
-            </MudSelect>
+            <MudMenu EndIcon="@Icons.Material.Filled.FilterList"
+         Label="Filter"
+         Variant="Variant.Outlined"
+         Size="Size.Small"
+         Style="white-space:nowrap"
+         AnchorOrigin="Origin.BottomCenter"
+         TransformOrigin="Origin.TopCenter">
+    <MudMenuItem OnClick="@(() => categoryFilter = null)">All</MudMenuItem>
+    <MudMenuItem OnClick="@(() => categoryFilter = "Apparel")">Apparel</MudMenuItem>
+    <MudMenuItem OnClick="@(() => categoryFilter = "Miscellaneous")">Miscellaneous</MudMenuItem>
+    <MudDivider />
+    <MudMenuItem OnClick="@(() => { categoryFilter = null; SearchTerm = ""; })">
+        <MudIcon Icon="@Icons.Material.Filled.Clear" Size="Size.Small" Class="mr-1"/> Clear Filters
+    </MudMenuItem>
+</MudMenu>
         </div>
 
         @foreach (var parent in FilteredProducts)
@@ -153,15 +165,17 @@
     private int SelectedLocationId;
     private string SearchTerm = "";
     private bool ShowSummary = false;
+    private string? categoryFilter = null;
 
     private List<Location> Locations = new();
     private List<RecountParentDTO> MasterProducts = new();
 
     private string CurrentLocationName => Locations.FirstOrDefault(l => l.Id == SelectedLocationId)?.Name ?? "";
 
-    private IEnumerable<RecountParentDTO> FilteredProducts => 
-        string.IsNullOrEmpty(SearchTerm) ? MasterProducts : MasterProducts.Where(p => p.ParentName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
-
+  private IEnumerable<RecountParentDTO> FilteredProducts => MasterProducts
+    .Where(p => string.IsNullOrEmpty(SearchTerm) || 
+                p.ParentName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
+    .Where(p => categoryFilter == null || p.CategoryName == categoryFilter);
     protected override async Task OnInitializedAsync()
     {
         using var db = await DbFactory.CreateDbContextAsync();
@@ -180,10 +194,12 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
         var stock = await db.ProductLocations
-            .Include(pl => pl.Product).ThenInclude(p => p.Image)
-            .Include(pl => pl.Product).ThenInclude(p => p.ParentProduct!).ThenInclude(pp => pp.Image)
-            .Where(pl => pl.LocationId == SelectedLocationId)
-            .ToListAsync();
+    .Include(pl => pl.Product).ThenInclude(p => p.Image)
+    .Include(pl => pl.Product).ThenInclude(p => p.Category)
+    .Include(pl => pl.Product).ThenInclude(p => p.ParentProduct!).ThenInclude(pp => pp.Image)
+    .Include(pl => pl.Product).ThenInclude(p => p.ParentProduct!).ThenInclude(pp => pp.Category)
+    .Where(pl => pl.LocationId == SelectedLocationId)
+    .ToListAsync();
 
         MasterProducts = stock
             .GroupBy(s => s.Product.ParentProductId ?? s.Product.Id) 
@@ -193,6 +209,7 @@
                 return new RecountParentDTO {
                     ParentName = isChild ? (firstItem.ParentProduct?.Name ?? firstItem.Name) : firstItem.Name,
                     ImageFileName = isChild ? (firstItem.ParentProduct?.Image?.FileName ?? firstItem.Image?.FileName) : firstItem.Image?.FileName,
+                    CategoryName = firstItem.Category?.Name ?? firstItem.ParentProduct?.Category?.Name,
                     Variants = group.Select(v => new RecountVariantDTO {
                         ProductId = v.ProductId,
                         VariantName = GenerateVariantName(v.Product),
@@ -233,6 +250,7 @@
     public class RecountParentDTO {
         public string ParentName { get; set; } = "";
         public string? ImageFileName { get; set; }
+        public string? CategoryName { get; set; }
         public List<RecountVariantDTO> Variants { get; set; } = new();
     }
 

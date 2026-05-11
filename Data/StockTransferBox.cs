@@ -7,6 +7,8 @@ namespace PuppetFestAPP.Web.Data;
 
 public class StockTransferBox
 {
+    [MaxLength(200)]
+    public string? Title { get; set; }
     public int Id { get; set; }
     public int FromLocationId { get; set; }
     public int ToLocationId { get; set; }

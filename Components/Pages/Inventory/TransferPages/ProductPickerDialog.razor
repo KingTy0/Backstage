@@ -19,16 +19,25 @@
                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                           Immediate="true" Variant="Variant.Outlined" Margin="Margin.Dense"
                           Style="flex:1" />
-            <MudMenu EndIcon="@Icons.Material.Filled.FilterList" 
-                    Label="Filter"
-                    Variant="Variant.Outlined"
-                    Size="Size.Small" 
-                    Style="white-space:nowrap"
-                    AnchorOrigin="Origin.BottomCenter" 
-                    TransformOrigin="Origin.TopCenter">
-                <MudMenuItem OnClick="@(() => searchString = "")">Clear Filters</MudMenuItem>
-                <MudMenuItem OnClick="@(() => searchString = "Low Stock")">Low Stock</MudMenuItem>
-            </MudMenu>
+            <MudMenu EndIcon="@Icons.Material.Filled.FilterList"
+                Label="Filter"
+                Variant="Variant.Outlined"
+                Size="Size.Small"
+                Style="white-space:nowrap"
+                AnchorOrigin="Origin.BottomCenter"
+                TransformOrigin="Origin.TopCenter">
+            <MudMenuItem OnClick="@(() => { categoryFilter = null; lowStockOnly = false; })">All</MudMenuItem>
+            <MudMenuItem OnClick="@(() => categoryFilter = "Apparel")">Apparel</MudMenuItem>
+            <MudMenuItem OnClick="@(() => categoryFilter = "Miscellaneous")">Miscellaneous</MudMenuItem>
+            <MudDivider />
+            <MudMenuItem OnClick="@(() => lowStockOnly = !lowStockOnly)">
+                @(lowStockOnly ? "✓ " : "")Low Stock
+            </MudMenuItem>
+            <MudDivider />
+            <MudMenuItem OnClick="@(() => { categoryFilter = null; lowStockOnly = false; searchString = ""; })">
+                <MudIcon Icon="@Icons.Material.Filled.Clear" Size="Size.Small" Class="mr-1"/> Clear Filters
+            </MudMenuItem>
+        </MudMenu>
         </MudStack>
     </MudPaper>
 
@@ -42,8 +51,15 @@
             <MudExpansionPanel DisableGutters="true">
                 <TitleContent>
                     <div class="d-flex align-center py-2">
-                        <MudAvatar Variant="Variant.Outlined" Square="true" Class="mr-3">
-                             <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" />
+                        <MudAvatar Variant="Variant.Outlined" Square="true" Size="Size.Large" Class="mr-3">
+                            @if (!string.IsNullOrEmpty(parent.ImageFileName))
+                            {
+                                <MudImage Src="@($"/images/products/{parent.ImageFileName}")" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" />
+                            }
                         </MudAvatar>
                         <MudText><b>@parent.ParentName</b></MudText>
                     </div>
@@ -117,28 +133,31 @@
     [Parameter] public List<ProductLocation> Inventory { get; set; } = new();
     [Parameter] public List<TransferBoxItemModel> Items { get; set; } = new();
 
+    private string? categoryFilter = null;
+    private bool lowStockOnly = false;
     private string searchString = "";
 
     private IEnumerable<GroupedProduct> GroupedInventory => Inventory
-        .Where(x => string.IsNullOrWhiteSpace(searchString) || 
-                (x.Product?.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
-        
-        .GroupBy(x => x.Product?.ParentProductId ?? x.Product?.Id ?? 0)
-        .Select(g => {
-            var firstItem = g.First().Product;
-          
-            var cleanParentName = firstItem?.ParentProduct?.Name ?? firstItem?.Name ?? "Unknown Product";
-
-            return new GroupedProduct {
-                ParentName = cleanParentName,
-                Variants = g.Select(v => new VariantInfo {
-                    ProductId = v.ProductId,
-                   
-                    VariantName = $"{v.Product?.Size} / {v.Product?.Color}",
-                    StockAvailable = v.Quantity
-                }).ToList()
-            };
-        });
+    .Where(x => string.IsNullOrWhiteSpace(searchString) || 
+            (x.Product?.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
+    .Where(x => categoryFilter == null || x.Product?.Category?.Name == categoryFilter)
+    .Where(x => !lowStockOnly || x.Quantity <= 5)
+    .GroupBy(x => x.Product?.ParentProductId ?? x.Product?.Id ?? 0)
+    .Select(g => {
+        var firstItem = g.First().Product;
+        var isChild = firstItem?.ParentProductId != null;
+        return new GroupedProduct {
+            ParentName = isChild ? (firstItem?.ParentProduct?.Name ?? firstItem?.Name ?? "Unknown") : (firstItem?.Name ?? "Unknown"),
+            ImageFileName = isChild 
+                ? (firstItem?.ParentProduct?.Image?.FileName ?? firstItem?.Image?.FileName)
+                : firstItem?.Image?.FileName,
+            Variants = g.Select(v => new VariantInfo {
+                ProductId = v.ProductId,
+                VariantName = $"{v.Product?.Size} / {v.Product?.Color}",
+                StockAvailable = v.Quantity
+            }).ToList()
+        };
+    });
 
     private void UpdateQuantity(VariantInfo variant, int change)
         {
@@ -205,9 +224,10 @@
 }
 
     public class GroupedProduct {
-        public string ParentName { get; set; } = "";
-        public List<VariantInfo> Variants { get; set; } = new();
-    }
+    public string ParentName { get; set; } = "";
+    public string? ImageFileName { get; set; }
+    public List<VariantInfo> Variants { get; set; } = new();
+}
 
     public class VariantInfo {
         public int ProductId { get; set; }
