@@ -4,47 +4,81 @@
 @using PuppetFestAPP.Web.Models
 @rendermode InteractiveServer
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Nav
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
-    @* --- HEADER SECTION --- *@
     <MudText Typo="Typo.h3" Style="font-family: var(--title-font); font-weight: bold;">Product Catalog</MudText>
     <MudText Typo="Typo.body1" Class="mt-2 mb-6" Color="Color.Secondary">
         The collection of merchandise currently being sold.
     </MudText>
 
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" 
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
                Size="Size.Large" Class="py-3 mb-8" StartIcon="@Icons.Material.Filled.Add"
                Href="products/create">
         CREATE A PRODUCT
     </MudButton>
 
-    @* --- SEARCH & FILTER SECTION --- *@
+    @* --- SEARCH & FILTER --- *@
     <div class="d-flex gap-2 mb-4">
-        <MudTextField @bind-Value="searchTerm" Placeholder="Search for an item" 
-                      Variant="Variant.Filled" Adornment="Adornment.End" 
-                      AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense" 
-                      Immediate="true" />
-        
-        <MudSelect T="string" Label="Filter" Variant="Variant.Outlined" Margin="Margin.Dense" 
-                   Style="width: 120px;" AnchorOrigin="Origin.BottomCenter">
-            <MudSelectItem Value="@("All")" />
-            <MudSelectItem Value="@("Apparel")" />
-            <MudSelectItem Value="@("Misc")" />
-        </MudSelect>
+        <MudTextField @bind-Value="searchTerm"
+                      Placeholder="Search for an item"
+                      Variant="Variant.Filled"
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Margin="Margin.Dense"
+                      Immediate="true"
+                      Style="flex:1" />
+
+        <MudMenu EndIcon="@Icons.Material.Filled.FilterList"
+                 Label="Filter"
+                 Variant="Variant.Outlined"
+                 Size="Size.Small"
+                 Style="white-space:nowrap"
+                 AnchorOrigin="Origin.BottomCenter"
+                 TransformOrigin="Origin.TopCenter">
+            <MudMenuItem OnClick="@(() => selectedCategory = null)">All</MudMenuItem>
+            <MudMenuItem OnClick="@(() => selectedCategory = "Apparel")">Apparel</MudMenuItem>
+            <MudMenuItem OnClick="@(() => selectedCategory = "Miscellaneous")">Miscellaneous</MudMenuItem>
+            <MudDivider />
+            <MudMenuItem OnClick="ClearFilters">
+                <MudIcon Icon="@Icons.Material.Filled.Clear" Size="Size.Small" Class="mr-1"/>
+                Clear Filters
+            </MudMenuItem>
+        </MudMenu>
     </div>
 
-    @* --- PRODUCT LIST SECTION (Matches image_a22dc3.png) --- *@
+    @* Active filter chip *@
+    @if (selectedCategory != null)
+    {
+        <div class="mb-3">
+            <MudChip T="string" Color="Color.Primary" Size="Size.Small"
+                     OnClose="@(() => selectedCategory = null)">
+                @selectedCategory
+            </MudChip>
+        </div>
+    }
+
+    @* --- PRODUCT LIST --- *@
     <MudPaper Elevation="0" Outlined="true" Class="overflow-hidden">
-        @* List Header *@
         <div class="d-flex pa-3 grey lighten-4 border-bottom">
             <MudText Typo="Typo.caption" Class="flex-grow-1"><b>Product Name</b></MudText>
             <MudText Typo="Typo.caption" Style="width: 80px;" Align="Align.Right"><b>Category</b></MudText>
         </div>
 
+        @if (!FilteredProducts.Any())
+        {
+            <div class="pa-8 d-flex flex-column align-center justify-center">
+                <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    No products found
+                </MudText>
+            </div>
+        }
+
         @foreach (var prod in FilteredProducts)
         {
-            <div class="product-row d-flex align-center pa-3 border-bottom clickable" @onclick="@(() => NavigateToDetails(prod.Id))">
-                @* Product Thumbnail *@
+            <div class="product-row d-flex align-center pa-3 border-bottom clickable"
+                 @onclick="@(() => NavigateToDetails(prod.Id))">
                 <MudAvatar Variant="Variant.Outlined" Square="true" Size="Size.Large" Class="mr-3 bg-white">
                     @if (prod.Image != null)
                     {
@@ -56,13 +90,11 @@
                     }
                 </MudAvatar>
 
-                @* Name & Price *@
                 <div class="flex-grow-1">
                     <MudText Typo="Typo.body2" Style="font-weight: 500; line-height: 1.2;">@prod.Name</MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@prod.Price.ToString("C")</MudText>
                 </div>
 
-                @* Category Label *@
                 <div style="width: 80px;" class="text-right">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@prod.Category?.Name</MudText>
                 </div>
@@ -72,36 +104,33 @@
 </MudContainer>
 
 <style>
-    /* Zebra Striping similar to mockup image_a22dc3.png */
-    .product-row:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-    .product-row:hover {
-        background-color: #f0f0f0;
-        cursor: pointer;
-    }
-    .border-bottom {
-        border-bottom: 1px solid #e0e0e0;
-    }
+    .product-row:nth-child(even) { background-color: #f9f9f9; }
+    .product-row:hover { background-color: #f0f0f0; cursor: pointer; }
+    .border-bottom { border-bottom: 1px solid #e0e0e0; }
 </style>
 
 @code {
     private List<Product> Products = new();
     private string searchTerm = "";
+    private string? selectedCategory = null;
 
-    private IEnumerable<Product> FilteredProducts => 
-        string.IsNullOrWhiteSpace(searchTerm) 
-            ? Products 
-            : Products.Where(p => p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<Product> FilteredProducts => Products
+        .Where(p => string.IsNullOrWhiteSpace(searchTerm) ||
+                    p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        .Where(p => selectedCategory == null ||
+                    p.Category?.Name == selectedCategory);
 
-    @inject NavigationManager Nav
     private void NavigateToDetails(int id) => Nav.NavigateTo($"/products/details/{id}");
+
+    private void ClearFilters()
+    {
+        searchTerm = "";
+        selectedCategory = null;
+    }
 
     protected override async Task OnInitializedAsync()
     {
         using var db = await DbFactory.CreateDbContextAsync();
-
-        // Loading Master Products only (ParentProductId == null)
         Products = await db.Products
             .Include(p => p.Category)
             .Include(p => p.Image)

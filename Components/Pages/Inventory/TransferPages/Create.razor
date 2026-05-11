@@ -209,7 +209,9 @@
     protected override async Task OnInitializedAsync()
     {
         using var context = await DbFactory.CreateDbContextAsync();
-        Locations = await context.Locations.Where(l => l.IsActive).ToListAsync();
+        Locations = await context.Locations
+    .Where(l => l.IsActive && l.Type != LocationType.Van)
+    .ToListAsync();
         Form.BoxTitle = "Box #" + (await context.StockTransferBoxes.CountAsync() + 1);
     }
 
@@ -224,10 +226,18 @@
        
         using var context = await DbFactory.CreateDbContextAsync();
         AvailableInventory = await context.ProductLocations
-            .Include(pl => pl.Product)
-                .ThenInclude(p => p.ParentProduct)
-            .Where(pl => pl.LocationId == Form.FromLocationId && pl.Quantity > 0)
-            .ToListAsync();
+    .Include(pl => pl.Product)
+        .ThenInclude(p => p.Image)
+    .Include(pl => pl.Product)
+        .ThenInclude(p => p.Category)
+    .Include(pl => pl.Product)
+        .ThenInclude(p => p.ParentProduct!)
+            .ThenInclude(pp => pp.Image)
+    .Include(pl => pl.Product)
+        .ThenInclude(p => p.ParentProduct!)
+            .ThenInclude(pp => pp.Category)
+    .Where(pl => pl.LocationId == Form.FromLocationId && pl.Quantity > 0)
+    .ToListAsync();
 
         var parameters = new DialogParameters
         {
@@ -295,6 +305,7 @@
         {
             var transferBox = new StockTransferBox
             {
+                Title = Form.BoxTitle,
                 FromLocationId = Form.FromLocationId.Value,
                 ToLocationId = Form.ToLocationId.Value,
                 CreatedAt = DateTime.UtcNow,
