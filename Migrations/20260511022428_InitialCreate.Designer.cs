@@ -11,8 +11,8 @@ using PuppetFestAPP.Web.Data;
 namespace PuppetFestAPP.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260502220341_AddIsPickedUpToTransferBox")]
-    partial class AddIsPickedUpToTransferBox
+    [Migration("20260511022428_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -69,8 +69,9 @@ namespace PuppetFestAPP.Web.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    FileName = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    AltText = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true)
+                    FileName = table.Column<string>(type: "TEXT", nullable: false),
+                    AltText = table.Column<string>(type: "TEXT", nullable: true),
+                    UploadDate = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -84,7 +85,9 @@ namespace PuppetFestAPP.Web.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    Address = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false)
+                    Address = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -237,6 +240,58 @@ namespace PuppetFestAPP.Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "StockTransferBoxes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    FromLocationId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ToLocationId = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Notes = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    IsPickedUp = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsDelivered = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StockTransferBoxes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StockTransferBoxes_Locations_FromLocationId",
+                        column: x => x.FromLocationId,
+                        principalTable: "Locations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_StockTransferBoxes_Locations_ToLocationId",
+                        column: x => x.ToLocationId,
+                        principalTable: "Locations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Inventories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ProductId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Quantity = table.Column<int>(type: "INTEGER", nullable: false),
+                    Location = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    LastUpdated = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Inventories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Inventories_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ProductLocations",
                 columns: table => new
                 {
@@ -260,6 +315,63 @@ namespace PuppetFestAPP.Web.Migrations
                         name: "FK_ProductLocations_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Sales",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ProductId = table.Column<int>(type: "INTEGER", nullable: false),
+                    LocationId = table.Column<int>(type: "INTEGER", nullable: false),
+                    QuantitySold = table.Column<int>(type: "INTEGER", nullable: false),
+                    UnitPriceAtSale = table.Column<decimal>(type: "TEXT", nullable: false),
+                    SaleDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    IsManualAdjustment = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Sales", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Sales_Locations_LocationId",
+                        column: x => x.LocationId,
+                        principalTable: "Locations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Sales_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StockTransferBoxItems",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    StockTransferBoxId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ProductId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Quantity = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StockTransferBoxItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StockTransferBoxItems_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_StockTransferBoxItems_StockTransferBoxes_StockTransferBoxId",
+                        column: x => x.StockTransferBoxId,
+                        principalTable: "StockTransferBoxes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -302,14 +414,20 @@ namespace PuppetFestAPP.Web.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Inventories_ProductId",
+                table: "Inventories",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProductLocations_LocationId",
                 table: "ProductLocations",
                 column: "LocationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductLocations_ProductId",
+                name: "IX_ProductLocations_ProductId_LocationId",
                 table: "ProductLocations",
-                column: "ProductId");
+                columns: new[] { "ProductId", "LocationId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Products_CategoryId",
@@ -319,13 +437,42 @@ namespace PuppetFestAPP.Web.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Products_ImageId",
                 table: "Products",
-                column: "ImageId",
-                unique: true);
+                column: "ImageId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Products_ParentProductId",
                 table: "Products",
                 column: "ParentProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Sales_LocationId",
+                table: "Sales",
+                column: "LocationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Sales_ProductId",
+                table: "Sales",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StockTransferBoxes_FromLocationId",
+                table: "StockTransferBoxes",
+                column: "FromLocationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StockTransferBoxes_ToLocationId",
+                table: "StockTransferBoxes",
+                column: "ToLocationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StockTransferBoxItems_ProductId",
+                table: "StockTransferBoxItems",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StockTransferBoxItems_StockTransferBoxId",
+                table: "StockTransferBoxItems",
+                column: "StockTransferBoxId");
         }
 
         /// <inheritdoc />
@@ -347,7 +494,16 @@ namespace PuppetFestAPP.Web.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "Inventories");
+
+            migrationBuilder.DropTable(
                 name: "ProductLocations");
+
+            migrationBuilder.DropTable(
+                name: "Sales");
+
+            migrationBuilder.DropTable(
+                name: "StockTransferBoxItems");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -356,16 +512,19 @@ namespace PuppetFestAPP.Web.Migrations
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
-                name: "Locations");
+                name: "Products");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "StockTransferBoxes");
 
             migrationBuilder.DropTable(
                 name: "Categories");
 
             migrationBuilder.DropTable(
                 name: "Images");
+
+            migrationBuilder.DropTable(
+                name: "Locations");
         }
     }
 }
