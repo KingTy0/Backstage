@@ -45,5 +45,7 @@ You can see the live branch [HERE](https://ccpuppetfest-backstage-gaaad2hyh6d5bu
 * Yunjong (he/him)
   * Managed view dependencies
   * Resolved merge conflicts across branches
+  * Updates Home / Dashboard / Notifications Page
+  * Restructured notifications page
 * Mia (She/Her)
   * Implemented email authentication system
