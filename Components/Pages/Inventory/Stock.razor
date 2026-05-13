@@ -54,7 +54,7 @@
     {
         var grouped = GetGroupedStock(SelectedLocation.Id);
         var totalUnits = grouped.Sum(g => g.Variants.Sum(v => v.Quantity));
-        var lowCount = grouped.Sum(g => g.Variants.Count(v => v.Quantity < 10));
+        var lowCount = grouped.Sum(g => g.Variants.Count(v => InventoryAlerts.IsLowStock(v.Quantity)));
 
         @* ── Summary Bar ── *@
         <div class="d-flex align-center gap-3 flex-wrap">
@@ -115,7 +115,7 @@
                                 </div>
 
                                 @* Low stock badge if any variant is low *@
-                                @if (group.Variants.Any(v => v.Quantity < 10))
+                                @if (group.Variants.Any(v => InventoryAlerts.IsLowStock(v.Quantity)))
                                 {
                                     <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">
                                         Low
@@ -153,7 +153,7 @@
                                         <MudChip T="int"
                                                  Variant="Variant.Outlined"
                                                  Size="Size.Small"
-                                                 Class="@(variant.Quantity < 10 ? "qty-chip-low" : "qty-chip-ok")">
+                                                 Class="@(InventoryAlerts.IsLowStock(variant.Quantity) ? "qty-chip-low" : "qty-chip-ok")">
                                             @variant.Quantity
                                         </MudChip>
                                     }

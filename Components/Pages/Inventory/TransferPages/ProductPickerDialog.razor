@@ -141,7 +141,7 @@
     .Where(x => string.IsNullOrWhiteSpace(searchString) || 
             (x.Product?.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
     .Where(x => categoryFilter == null || x.Product?.Category?.Name == categoryFilter)
-    .Where(x => !lowStockOnly || x.Quantity <= 5)
+    .Where(x => !lowStockOnly || x.Quantity < InventoryAlerts.LowStockThreshold)
     .GroupBy(x => x.Product?.ParentProductId ?? x.Product?.Id ?? 0)
     .Select(g => {
         var firstItem = g.First().Product;
