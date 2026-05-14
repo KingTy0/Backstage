@@ -1,6 +1,6 @@
-# Puppet Festival Project
+# Backstage
 ## Overview
-The Puppet Festival Project (Backstage) is an open-source inventory management web application developed for the Chicago International Theatre Puppet Festival. The system streamlines the tracking of inventory, product distribution, and logistics for festival operations.
+Backstage is an open-source inventory management web application developed for the Chicago International Theatre Puppet Festival. The system streamlines the tracking of inventory, product distribution, and logistics for festival operations.
 
 This project was collaboratively built by students at Columbia College Chicago using modern web technologies, including .NET 9.0, Blazor Web Applications, MudBlazor, C#, HTML, and CSS.
 
@@ -49,3 +49,4 @@ You can see the live branch [HERE](https://ccpuppetfest-backstage-gaaad2hyh6d5bu
   * Restructured notifications page
 * Mia (She/Her)
   * Implemented email authentication system
+  * About Page
