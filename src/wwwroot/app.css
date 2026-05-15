@@ -77,6 +77,10 @@ h2, h3, h4, h5, h6 {
     font-family: var(--subtitle-font);
 }
 
+p, input, textarea, button {
+    font-family: var(--main-font);
+}
+
 /*Desktop (default, ≥ 391 px)*/
 
 h1 {
