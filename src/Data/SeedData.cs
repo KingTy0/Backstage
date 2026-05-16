@@ -156,7 +156,6 @@ var theaters = new[]
     new Location { Name = "Wirtz Center Chicago Abbott Hall", Address = "710 N. Lake Shore Dr, Chicago, IL", Type = LocationType.Event },
     new Location { Name = "Warwick Allerton Hotel", Address = "701 N. Michigan Ave, Chicago, IL", Type = LocationType.Event },
     new Location { Name = "Studebaker Theater at the Fine Arts Building", Address = "410 S. Michigan Ave, Chicago, IL", Type = LocationType.Event },
-    new Location { Name = "Festival Headquarters + Puppet Hub", Address = "410 S. Michigan Ave, Chicago, IL", Type = LocationType.Event },
     new Location { Name = "Depaul's Merle Reskin Theatre", Address = "60 E. Balbo Dr, Chicago, IL", Type = LocationType.Event },
     new Location { Name = "Dance Center Columbia College Chicago", Address = "1306 S. Michigan Ave, Chicago, IL", Type = LocationType.Event },
     new Location { Name = "Reva & David Logan Center for the Arts", Address = "915 E. 60th St, Chicago, IL", Type = LocationType.Event },
@@ -219,7 +218,9 @@ await context.SaveChangesAsync();
             new Image { FileName = "Burgundy-Cuffed-Beanie.png", AltText = "Puppet Fest Sustainable Rib Cuffed Beanie - Burgundy" },
             new Image { FileName = "Puppet-Head-Button-2023.png", AltText = "Puppet Head Button 2023" },
             new Image { FileName = "Puppet-Head-Button-2024.png", AltText = "Puppet Head Button 2024" },
-            new Image { FileName = "Hare-Shadow-Puppet.png", AltText = "Shadow Puppet: The Hare" }
+            new Image { FileName = "Hare-Shadow-Puppet.png", AltText = "Shadow Puppet: The Hare" },
+            new Image { FileName = "Does-A-Dog-Have-Buddha-Nature-Black.png", AltText = "Dog Buddha Mug-Black" },
+            new Image { FileName = "Does-A-Dog-Have-Buddha-Nature-White.png", AltText = "Dog Buddha Mug-White" }
         );
         context.SaveChanges();
     }
@@ -312,18 +313,36 @@ int hubId = hubLocation.Id;
         context.ProductLocations.Add(new ProductLocation { ProductId = v.Id, LocationId = hubId, Quantity = 15 });
     }
     context.SaveChanges();
+    //-- Purple shirt 
+    var purpleT = new Product
+    {
+        Name = "Puppet Fest Logo Purple T-Shirt",
+        Description = "\"Head\" out in this colorful Festival logo t-shirt. This soft BELLA+CANVAS shirt is retail fit, unisex, and 100% Airlume combed and ring-spun cotton.",
+        Price = 20.00m, CategoryId = 1, ImageId = 5, IsActive = true
+    };
+    context.Products.Add(purpleT); context.SaveChanges();
+
+    foreach (var size in new[] { ProductSize.S, ProductSize.M, ProductSize.L, ProductSize.XL, ProductSize.XXL })
+    {
+        var v = new Product { Name = $"{purpleT.Name} ({size})", ParentProductId = purpleT.Id, Size = size, Price = 20.00m, Color = ProductColor.NA, CategoryId = 1, IsActive = true };
+        context.Products.Add(v); context.SaveChanges();
+        context.ProductLocations.Add(new ProductLocation { ProductId = v.Id, LocationId = hubId, Quantity = 20 });
+    }
+    context.SaveChanges();
 
     // --- PRODUCT 5: BEANIES ---
     foreach (var b in new[] {
-        new { Name = "Puppet Fest Cuffed Waffle Beanie - Birch", ImgId = 12 },
-        new { Name = "Puppet Fest Sustainable Rib Cuffed Beanie - Bottle Green", ImgId = 15 }
-    })
-    {
-        var beanie = new Product { Name = b.Name, Description = "Stay warm with our official festival headwear.", Price = 25.00m, CategoryId = 1, ImageId = b.ImgId, IsActive = true };
-        context.Products.Add(beanie); context.SaveChanges();
-        context.ProductLocations.Add(new ProductLocation { ProductId = beanie.Id, LocationId = hubId, Quantity = 40 });
-    }
-    context.SaveChanges();
+    new { Name = "Puppet Fest Cuffed Waffle Beanie - Birch", ImgId = 12 },
+    new { Name = "Puppet Fest Sustainable Rib Cuffed Beanie - Bottle Green", ImgId = 15 },
+    new { Name = "Puppet Fest Sustainable Rib Cuffed Beanie - Burgundy", ImgId = 16 },
+    new { Name = "Puppet Fest Cuffed Waffle Beanie - Camel", ImgId = 13 }
+})
+{
+    var beanie = new Product { Name = b.Name, Description = "Stay warm with our official festival headwear.", Price = 20.00m, CategoryId = 1, ImageId = b.ImgId, IsActive = true };
+    context.Products.Add(beanie); context.SaveChanges();
+    context.ProductLocations.Add(new ProductLocation { ProductId = beanie.Id, LocationId = hubId, Quantity = 40 });
+}
+context.SaveChanges();
 
     // --- PRODUCT 6: TOTE BAG ---
     var tote = new Product { Name = "Puppet Fest Logo Tote Bag", Description = "Carry your stuff while repping your favorite Puppet Fest!", Price = 20.00m, CategoryId = 2, ImageId = 6, IsActive = true };
@@ -384,6 +403,20 @@ int hubId = hubLocation.Id;
     context.Products.Add(harePuppet); context.SaveChanges();
     context.ProductLocations.Add(new ProductLocation { ProductId = harePuppet.Id, LocationId = hubId, Quantity = 25 });
     context.SaveChanges();
+
+    // --- MUGS ---
+    foreach (var m in new[] {
+        new { Name = "Mug (Black) - Does A Dog Have Buddha Nature?", ImgId = 20 },
+        new { Name = "Mug (White) - Does A Dog Have Buddha Nature?", ImgId = 21 }
+    })
+    {
+        var mug = new Product { Name = m.Name, Description = "Drink your coffee from a mug adorned with images of your favorite puppet performance and Zen Buddhist koan: \"Does A Dog Have Buddha Nature?\" Blair Thomas performed his new show of this title in the 2026 Chicago Puppet Fest, and whether you saw it or not you will love this 11 oz mug.", Price = 15.00m, CategoryId = 2, ImageId = m.ImgId, IsActive = true };
+        context.Products.Add(mug); context.SaveChanges();
+        context.ProductLocations.Add(new ProductLocation { ProductId = mug.Id, LocationId = hubId, Quantity = 50 });
+    }
+    context.SaveChanges();
+
+    
 }
 }
 }

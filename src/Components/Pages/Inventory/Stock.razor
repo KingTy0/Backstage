@@ -47,7 +47,7 @@
     }
     else
     {
-        var grouped = GetGroupedStock(SelectedLocation.Id);
+        var grouped = FilteredGrouped;
         var totalUnits = grouped.Sum(g => g.Variants.Sum(v => v.Quantity));
         var lowCount = grouped.Sum(g => g.Variants.Count(v => InventoryAlerts.IsLowStock(v.Quantity)));
 
@@ -67,6 +67,31 @@
                     @lowCount low stock
                 </MudChip>
             }
+        </div>
+        <div class="d-flex gap-2 my-4">
+            <MudTextField @bind-Value="searchTerm"
+                        Placeholder="Search for an item"
+                        Variant="Variant.Outlined"
+                        Adornment="Adornment.End"
+                        AdornmentIcon="@Icons.Material.Filled.Search"
+                        Margin="Margin.Dense"
+                        Immediate="true"
+                        Style="flex:1" />
+            <MudMenu EndIcon="@Icons.Material.Filled.FilterList"
+                    Label="Filter"
+                    Variant="Variant.Outlined"
+                    Size="Size.Large"
+                    Style="white-space:nowrap"
+                    AnchorOrigin="Origin.BottomCenter"
+                    TransformOrigin="Origin.TopCenter">
+                <MudMenuItem OnClick="@(() => categoryFilter = null)">All</MudMenuItem>
+                <MudMenuItem OnClick="@(() => categoryFilter = "Apparel")">Apparel</MudMenuItem>
+                <MudMenuItem OnClick="@(() => categoryFilter = "Miscellaneous")">Miscellaneous</MudMenuItem>
+                <MudDivider />
+                <MudMenuItem OnClick="@(() => { categoryFilter = null; searchTerm = ""; })">
+                    <MudIcon Icon="@Icons.Material.Filled.Clear" Size="Size.Small" Class="mr-1"/> Clear Filters
+                </MudMenuItem>
+            </MudMenu>
         </div>
 
             @if (!grouped.Any())
@@ -176,12 +201,22 @@
     private List<Location> AllLocations = new();
     private Location? SelectedLocation;
     private bool _editMode = false;
+    private string searchTerm = "";
+    private string? categoryFilter = null;
+
+    private List<StockGroupDTO> FilteredGrouped => SelectedLocation == null ? new() :
+    GetGroupedStock(SelectedLocation.Id)
+        .Where(g => string.IsNullOrEmpty(searchTerm) || 
+                    g.ParentName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        .Where(g => categoryFilter == null || g.CategoryName == categoryFilter)
+        .ToList();
 
     // ── DTOs ──
     public class StockGroupDTO
     {
         public string ParentName { get; set; } = "";
         public string? ImageFileName { get; set; }
+        public string? CategoryName { get; set; }
         public List<StockVariantDTO> Variants { get; set; } = new();
     }
 
@@ -202,16 +237,21 @@
         .ToListAsync();
 
     StockData = await db.ProductLocations
-        .Include(pl => pl.Product)
-            .ThenInclude(p => p.Image)
-        .Include(pl => pl.Product)
-            .ThenInclude(p => p.ParentProduct!)
-                .ThenInclude(pp => pp.Image)
-        .Include(pl => pl.Location)
-        .Where(pl => pl.Quantity > 0)
-        .OrderBy(pl => pl.Location.Name)
-        .ThenBy(pl => pl.Product.Name)
-        .ToListAsync();
+    .Include(pl => pl.Product)
+        .ThenInclude(p => p.Image)
+    .Include(pl => pl.Product)
+        .ThenInclude(p => p.Category)
+    .Include(pl => pl.Product)
+        .ThenInclude(p => p.ParentProduct!)
+            .ThenInclude(pp => pp.Image)
+    .Include(pl => pl.Product)
+        .ThenInclude(p => p.ParentProduct!)
+            .ThenInclude(pp => pp.Category)
+    .Include(pl => pl.Location)
+    .Where(pl => pl.Quantity > 0)
+    .OrderBy(pl => pl.Location.Name)
+    .ThenBy(pl => pl.Product.Name)
+    .ToListAsync();
 
     SelectedLocation = AllLocations.FirstOrDefault(l => l.Type == LocationType.Store) 
                    ?? AllLocations.FirstOrDefault();
@@ -239,6 +279,9 @@
                 {
                     ParentName = parentName,
                     ImageFileName = imageFile,
+                    CategoryName = isChild
+                    ? (first?.ParentProduct?.Category?.Name ?? first?.Category?.Name)
+                    : first?.Category?.Name,
                     Variants = g.Select(v => new StockVariantDTO
                     {
                         VariantName = GenerateVariantName(v.Product!),

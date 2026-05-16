@@ -280,7 +280,7 @@ private void OnSizeToggled(ProductSize size, bool isChecked)
     imagePreviewBase64 = null;
 }
 
-  private async Task AddProduct()
+ private async Task AddProduct()
 {
     using var context = await DbFactory.CreateDbContextAsync();
     Product? parentProduct = null;
@@ -297,22 +297,39 @@ private void OnSizeToggled(ProductSize size, bool isChecked)
             Price = Form.Price,
             Description = Form.Description ?? "",
             CategoryId = Form.CategoryId,
-            Size = ProductSize.NA, 
+            Size = ProductSize.NA,
             Color = ProductColor.NA,
             IsActive = true,
             DateAdded = DateTime.Now
         };
         context.Products.Add(parentProduct);
-        await context.SaveChangesAsync(); 
+        await context.SaveChangesAsync();
+
+        // Only add hub entry for standalone products (no sizes)
+        if (!Form.SelectedSizes.Any())
+        {
+            var hub = await context.Locations
+                .FirstOrDefaultAsync(l => l.Type == LocationType.Store);
+            if (hub != null)
+            {
+                context.ProductLocations.Add(new ProductLocation
+                {
+                    ProductId = parentProduct.Id,
+                    LocationId = hub.Id,
+                    Quantity = 0,
+                    LastUpdated = DateTime.Now
+                });
+                await context.SaveChangesAsync();
+            }
+        }
     }
-    else 
+    else
     {
         parentProduct.Price = Form.Price;
         parentProduct.Description = Form.Description;
         await context.SaveChangesAsync();
     }
 
-   
     if (!string.IsNullOrEmpty(uploadedFileName))
     {
         var tempPath = Path.Combine(Path.GetTempPath(), "puppetfest_uploads", uploadedFileName);
@@ -320,61 +337,70 @@ private void OnSizeToggled(ProductSize size, bool isChecked)
 
         if (System.IO.File.Exists(tempPath))
         {
-            
             Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
-            
-          
-            System.IO.File.Move(tempPath, finalPath); 
-            
-           
-           var newImage = new PuppetFestAPP.Web.Models.Image
+            System.IO.File.Move(tempPath, finalPath);
+
+            var newImage = new PuppetFestAPP.Web.Models.Image
             {
                 FileName = uploadedFileName,
                 AltText = Form.Name
             };
             context.Images.Add(newImage);
-            await context.SaveChangesAsync(); 
-            
-           
+            await context.SaveChangesAsync();
+
             parentProduct.ImageId = newImage.Id;
             await context.SaveChangesAsync();
         }
     }
 
- 
     if (Form.SelectedSizes.Any())
-{
-    var sizes = Form.SelectedSizes.Where(s => s != ProductSize.NA).ToList();
-    if (!sizes.Any()) sizes.Add(ProductSize.NA);
-
-    foreach (var s in sizes)
     {
-        bool exists = await context.Products.AnyAsync(p =>
-            p.ParentProductId == parentProduct.Id && p.Size == s);
+        var sizes = Form.SelectedSizes.Where(s => s != ProductSize.NA).ToList();
+        if (!sizes.Any()) sizes.Add(ProductSize.NA);
 
-        if (!exists)
+        var hub = await context.Locations
+            .FirstOrDefaultAsync(l => l.Type == LocationType.Store);
+
+        foreach (var s in sizes)
         {
-            context.Products.Add(new Product
+            bool exists = await context.Products.AnyAsync(p =>
+                p.ParentProductId == parentProduct.Id && p.Size == s);
+
+            if (!exists)
             {
-                Name = $"{parentProduct.Name} ({s})",
-                ParentProductId = parentProduct.Id,
-                Price = Form.Price,
-                CategoryId = parentProduct.CategoryId,
-                Size = s,
-                Color = ProductColor.NA,
-                ImageId = parentProduct.ImageId,
-                Description = parentProduct.Description,
-                IsActive = true,
-                DateAdded = DateTime.Now
-            });
+                var newVariant = new Product
+                {
+                    Name = $"{parentProduct.Name} ({s})",
+                    ParentProductId = parentProduct.Id,
+                    Price = Form.Price,
+                    CategoryId = parentProduct.CategoryId,
+                    Size = s,
+                    Color = ProductColor.NA,
+                    ImageId = parentProduct.ImageId,
+                    Description = parentProduct.Description,
+                    IsActive = true,
+                    DateAdded = DateTime.Now
+                };
+                context.Products.Add(newVariant);
+                await context.SaveChangesAsync();
+
+                if (hub != null)
+                {
+                    context.ProductLocations.Add(new ProductLocation
+                    {
+                        ProductId = newVariant.Id,
+                        LocationId = hub.Id,
+                        Quantity = 0,
+                        LastUpdated = DateTime.Now
+                    });
+                }
+            }
         }
+        await context.SaveChangesAsync();
     }
-    await context.SaveChangesAsync();
-}
 
     Snackbar.Add("Changes saved successfully!", Severity.Success);
     NavigationManager.NavigateTo($"/products/details/{parentProduct.Id}");
 }
-
 
 }
